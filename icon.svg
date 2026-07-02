@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="TOI MEMO icon">
-  <rect width="512" height="512" rx="96" fill="#101010"/>
-  <rect x="82" y="82" width="348" height="348" rx="44" fill="#f5f5f5"/>
-  <rect x="120" y="146" width="272" height="22" rx="11" fill="#101010"/>
-  <rect x="120" y="204" width="214" height="18" rx="9" fill="#101010" opacity="0.78"/>
-  <rect x="120" y="254" width="250" height="18" rx="9" fill="#101010" opacity="0.78"/>
-  <rect x="120" y="304" width="172" height="18" rx="9" fill="#101010" opacity="0.78"/>
-  <text x="256" y="398" fill="#101010" font-family="Arial, Helvetica, sans-serif" font-size="54" font-weight="800" text-anchor="middle">TOI</text>
+  <rect width="512" height="512" rx="112" fill="#0b0b0c"/>
+  <rect x="40" y="40" width="432" height="432" rx="92" fill="none" stroke="#232326" stroke-width="4"/>
+  <path d="M162 112h156l78 78v210c0 28.7-23.3 52-52 52H168c-28.7 0-52-23.3-52-52V158c0-25.4 20.6-46 46-46Z" fill="none" stroke="#f8f8f8" stroke-width="26" stroke-linejoin="round"/>
+  <path d="M318 116v78c0 15.5 12.5 28 28 28h48" fill="none" stroke="#f8f8f8" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M176 252h160" stroke="#f8f8f8" stroke-width="22" stroke-linecap="round"/>
+  <path d="M176 312h124" stroke="#f8f8f8" stroke-width="22" stroke-linecap="round"/>
+  <path d="M176 372h82" stroke="#f8f8f8" stroke-width="22" stroke-linecap="round"/>
 </svg>
