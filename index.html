@@ -192,6 +192,25 @@
     </section>
   </div>
 
+  <div class="template-modal" id="templateModal" hidden>
+    <div class="template-backdrop" id="templateBackdrop"></div>
+    <section class="template-panel" id="templatePanel" role="dialog" aria-modal="true" aria-labelledby="templateTitle">
+      <div class="template-header">
+        <div>
+          <p class="section-kicker">Templates</p>
+          <h2 id="templateTitle">テンプレートを選択</h2>
+        </div>
+        <button class="icon-button template-close-button" id="templateCloseButton" type="button" aria-label="テンプレート選択を閉じる">×</button>
+      </div>
+
+      <div class="template-body">
+        <p class="template-lead">用途に近い形から始められます。あとから自由に編集できます。</p>
+        <div class="template-grid" id="templateGrid" aria-label="テンプレート一覧"></div>
+        <button class="ghost-button template-cancel-button" id="templateCancelButton" type="button">キャンセル</button>
+      </div>
+    </section>
+  </div>
+
   <div class="update-banner" id="updateBanner" hidden role="status" aria-live="polite">
     <p>新しいバージョンがあります。更新しますか？</p>
     <div class="update-actions">

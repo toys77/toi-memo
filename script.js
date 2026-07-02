@@ -1,6 +1,6 @@
 "use strict";
 
-const APP_VERSION = "1.4.2";
+const APP_VERSION = "1.5.0";
 const BACKUP_RECOMMEND_DAYS = 7;
 
 const STORAGE_KEYS = {
@@ -14,6 +14,123 @@ const CATEGORIES = ["全部", "アイデア", "就活", "授業", "バンド", "
 const EDIT_CATEGORIES = CATEGORIES.filter((category) => category !== "全部");
 const PRIORITIES = ["低", "中", "高"];
 const PRIORITY_SCORE = { "高": 3, "中": 2, "低": 1 };
+
+// 新規作成時のテンプレートです。ここに追加すると選択画面にも反映されます。
+const NOTE_TEMPLATES = [
+  {
+    id: "blank",
+    name: "通常メモ",
+    description: "短い思いつきや一時メモに。",
+    title: "新規メモ",
+    category: "その他",
+    tags: [],
+    body: "自由にメモを書く。"
+  },
+  {
+    id: "job-company",
+    name: "就活企業メモ",
+    description: "企業研究、ES、面接準備をまとめる。",
+    title: "就活メモ：企業名",
+    category: "就活",
+    tags: ["就活", "企業研究", "面接"],
+    body: [
+      "## 企業名",
+      "## 事業内容",
+      "## 興味を持った理由",
+      "## 自分の経験とつながる点",
+      "## ESで使えそうな要素",
+      "## 面接で聞きたいこと",
+      "## 締切・次にやること"
+    ].join("\n\n")
+  },
+  {
+    id: "class-report",
+    name: "授業レポートメモ",
+    description: "課題条件と提出前チェックを整理する。",
+    title: "授業メモ：課題名",
+    category: "授業",
+    tags: ["授業", "レポート", "提出"],
+    body: [
+      "## 授業名",
+      "## 課題内容",
+      "## 必要な条件",
+      "## 使えそうな資料",
+      "## 構成案",
+      "## 提出前チェック\n- [ ] 字数\n- [ ] 形式\n- [ ] 誤字脱字\n- [ ] 参考文献\n- [ ] 提出ファイル名"
+    ].join("\n\n")
+  },
+  {
+    id: "band-pa",
+    name: "バンドPAチェック",
+    description: "ライブ前のPA確認と反省を残す。",
+    title: "バンドメモ：ライブ前PA確認",
+    category: "バンド",
+    tags: ["バンド", "PA", "ライブ"],
+    body: [
+      "## ライブ名",
+      "## 日付",
+      "## 使用機材",
+      "## 事前確認\n- [ ] マイク\n- [ ] DI\n- [ ] ケーブル\n- [ ] 電源\n- [ ] モニター\n- [ ] 音量バランス",
+      "## リハで確認すること",
+      "## 本番中の注意点",
+      "## 次回への反省"
+    ].join("\n\n")
+  },
+  {
+    id: "creative-character",
+    name: "創作キャラ設定",
+    description: "キャラクターの設定を抜け漏れなく作る。",
+    title: "創作メモ：キャラクター設定",
+    category: "創作",
+    tags: ["創作", "キャラクター", "設定"],
+    body: [
+      "## 名前",
+      "## 年齢・立場",
+      "## 外見",
+      "## 性格",
+      "## 口調",
+      "## 目的",
+      "## 弱点",
+      "## 過去",
+      "## 物語での役割",
+      "## 印象的なセリフ"
+    ].join("\n\n")
+  },
+  {
+    id: "game-idea",
+    name: "ゲーム案",
+    description: "企画の核と最小機能をすばやく固める。",
+    title: "ゲーム案：タイトル未定",
+    category: "ゲーム",
+    tags: ["ゲーム案", "企画", "システム"],
+    body: [
+      "## タイトル案",
+      "## ジャンル",
+      "## コンセプト",
+      "## 何が面白いか",
+      "## 基本ルール",
+      "## プレイヤーの目的",
+      "## 主要システム",
+      "## 参考作品",
+      "## 最初に作る最小機能"
+    ].join("\n\n")
+  },
+  {
+    id: "diary",
+    name: "日記",
+    description: "今日の出来事と気持ちを短く記録する。",
+    title: "日記：今日の記録",
+    category: "日記",
+    tags: ["日記"],
+    body: [
+      "## 今日あったこと",
+      "## 感情",
+      "## よかったこと",
+      "## 反省",
+      "## 明日やること"
+    ].join("\n\n")
+  }
+];
 
 const state = {
   notes: [],
@@ -37,7 +154,6 @@ const dom = {};
 
 document.addEventListener("DOMContentLoaded", init);
 window.addEventListener("load", registerServiceWorker);
-window.addEventListener("load", logAdobeFontsStatus);
 
 // 起動時にDOM取得、保存データ読み込み、初回サンプル投入をまとめて行います。
 function init() {
@@ -94,6 +210,12 @@ function cacheDom() {
   dom.settingsNoteCount = document.getElementById("settingsNoteCount");
   dom.settingsLastBackup = document.getElementById("settingsLastBackup");
   dom.backupAdvice = document.getElementById("backupAdvice");
+  dom.templateModal = document.getElementById("templateModal");
+  dom.templateBackdrop = document.getElementById("templateBackdrop");
+  dom.templatePanel = document.getElementById("templatePanel");
+  dom.templateCloseButton = document.getElementById("templateCloseButton");
+  dom.templateGrid = document.getElementById("templateGrid");
+  dom.templateCancelButton = document.getElementById("templateCancelButton");
   dom.updateBanner = document.getElementById("updateBanner");
   dom.updateReloadButton = document.getElementById("updateReloadButton");
   dom.updateDismissButton = document.getElementById("updateDismissButton");
@@ -108,7 +230,7 @@ function setupCategoryOptions() {
 
 // 入力欄は自動保存、一覧やカテゴリはクリックで状態更新する構成です。
 function bindEvents() {
-  dom.newNoteButton.addEventListener("click", createNote);
+  dom.newNoteButton.addEventListener("click", openTemplatePicker);
   dom.themeToggle.addEventListener("click", toggleTheme);
   dom.settingsButton.addEventListener("click", openSettings);
   dom.exportButton.addEventListener("click", exportNotes);
@@ -155,11 +277,22 @@ function bindEvents() {
   dom.settingsBackdrop.addEventListener("click", closeSettings);
   dom.settingsCloseButton.addEventListener("click", closeSettings);
   dom.settingsExportButton.addEventListener("click", exportNotes);
+  dom.templateBackdrop.addEventListener("click", closeTemplatePicker);
+  dom.templateCloseButton.addEventListener("click", closeTemplatePicker);
+  dom.templateCancelButton.addEventListener("click", closeTemplatePicker);
+  dom.templateGrid.addEventListener("click", handleTemplateSelect);
   dom.updateReloadButton.addEventListener("click", applyServiceWorkerUpdate);
   dom.updateDismissButton.addEventListener("click", hideUpdateNotice);
   window.addEventListener("resize", updateEditorShell);
   window.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !dom.settingsModal.hidden) {
+    if (event.key !== "Escape") return;
+
+    if (!dom.templateModal.hidden) {
+      closeTemplatePicker();
+      return;
+    }
+
+    if (!dom.settingsModal.hidden) {
       closeSettings();
     }
   });
@@ -408,16 +541,55 @@ function selectNote(id) {
   resetEditorScrollOnSmallScreen();
 }
 
-function createNote() {
+function openTemplatePicker() {
+  flushAutoSave(false);
+  renderTemplatePicker();
+  dom.templateModal.hidden = false;
+  dom.templatePanel.scrollTop = 0;
+  dom.templateCloseButton.focus();
+}
+
+function closeTemplatePicker() {
+  dom.templateModal.hidden = true;
+}
+
+function renderTemplatePicker() {
+  dom.templateGrid.innerHTML = NOTE_TEMPLATES.map((template) => {
+    const chips = [template.category, ...template.tags.slice(0, 3)]
+      .map((tag) => `<span class="template-chip">${escapeHtml(tag)}</span>`)
+      .join("");
+
+    return `
+      <button class="template-card" type="button" data-template-id="${escapeHtml(template.id)}">
+        <span class="template-name">${escapeHtml(template.name)}</span>
+        <span class="template-meta">${chips}</span>
+        <span class="template-preview">${escapeHtml(template.description)}</span>
+      </button>
+    `;
+  }).join("");
+}
+
+function handleTemplateSelect(event) {
+  const card = event.target.closest("[data-template-id]");
+  if (!card) return;
+
+  const template = NOTE_TEMPLATES.find((item) => item.id === card.dataset.templateId);
+  if (!template) return;
+
+  closeTemplatePicker();
+  createNote(template);
+}
+
+function createNote(template = NOTE_TEMPLATES[0]) {
   flushAutoSave(false);
 
   const now = new Date().toISOString();
   const note = {
     id: createId(),
-    title: "",
-    body: "",
-    category: "その他",
-    tags: [],
+    title: template.title,
+    body: template.body,
+    category: EDIT_CATEGORIES.includes(template.category) ? template.category : "その他",
+    tags: uniqueTags(template.tags),
     priority: "中",
     pinned: false,
     favorite: false,
@@ -431,7 +603,7 @@ function createNote() {
   saveNotes(false);
   renderAll();
   dom.titleInput.focus();
-  showToast("新規メモを作成しました");
+  showToast(`${template.name}から作成しました`);
   resetEditorScrollOnSmallScreen();
 }
 
@@ -984,36 +1156,4 @@ function applyServiceWorkerUpdate() {
 
   state.isUpdateReloading = true;
   window.location.reload();
-}
-
-function logAdobeFontsStatus() {
-  const html = document.documentElement;
-  const logStatus = () => {
-    console.log("[TOI MEMO] Adobe Fonts className:", html.className || "(empty)");
-  };
-
-  logStatus();
-
-  if (!("MutationObserver" in window)) {
-    setTimeout(logStatus, 3200);
-    return;
-  }
-
-  const observer = new MutationObserver(() => {
-    logStatus();
-
-    if (html.classList.contains("wf-active") || html.classList.contains("wf-inactive")) {
-      observer.disconnect();
-    }
-  });
-
-  observer.observe(html, {
-    attributes: true,
-    attributeFilter: ["class"]
-  });
-
-  setTimeout(() => {
-    logStatus();
-    observer.disconnect();
-  }, 3400);
 }
