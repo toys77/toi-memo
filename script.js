@@ -17,6 +17,7 @@ const state = {
   activeCategory: "全部",
   searchQuery: "",
   sortMode: "pinned",
+  isEditorOpen: true,
   autoSaveTimer: null,
   isDirty: false,
   toastTimer: null
@@ -33,6 +34,7 @@ function init() {
   bindEvents();
   applyTheme(loadTheme());
   loadNotes();
+  state.isEditorOpen = !isSmallScreen();
   renderCategoryFilters();
   selectInitialNote();
   renderAll();
@@ -51,9 +53,12 @@ function cacheDom() {
   dom.notesGrid = document.getElementById("notesGrid");
   dom.emptyState = document.getElementById("emptyState");
   dom.noteCount = document.getElementById("noteCount");
+  dom.editorPanel = document.getElementById("editorPanel");
+  dom.editorClosedState = document.getElementById("editorClosedState");
   dom.noteForm = document.getElementById("noteForm");
   dom.editorHeading = document.getElementById("editorHeading");
   dom.saveState = document.getElementById("saveState");
+  dom.closeEditorButton = document.getElementById("closeEditorButton");
   dom.titleInput = document.getElementById("titleInput");
   dom.bodyInput = document.getElementById("bodyInput");
   dom.categorySelect = document.getElementById("categorySelect");
@@ -113,7 +118,9 @@ function bindEvents() {
   });
 
   dom.noteForm.addEventListener("submit", (event) => event.preventDefault());
+  dom.closeEditorButton.addEventListener("click", closeEditor);
   dom.deleteButton.addEventListener("click", deleteSelectedNote);
+  window.addEventListener("resize", updateEditorShell);
 
   const autoSaveTargets = [
     dom.titleInput,
@@ -288,6 +295,11 @@ function renderNoteCard(note) {
 function renderEditor() {
   const note = getSelectedNote();
   const hasNote = Boolean(note);
+  updateEditorShell();
+
+  if (!state.isEditorOpen) {
+    return;
+  }
 
   [
     dom.titleInput,
@@ -344,8 +356,9 @@ function selectInitialNote() {
 function selectNote(id) {
   flushAutoSave(false);
   state.selectedId = id;
+  openEditor();
   renderAll();
-  focusEditorOnSmallScreen();
+  resetEditorScrollOnSmallScreen();
 }
 
 function createNote() {
@@ -367,11 +380,12 @@ function createNote() {
 
   state.notes.unshift(note);
   state.selectedId = note.id;
+  openEditor();
   saveNotes(false);
   renderAll();
   dom.titleInput.focus();
   showToast("新規メモを作成しました");
-  focusEditorOnSmallScreen();
+  resetEditorScrollOnSmallScreen();
 }
 
 function deleteSelectedNote() {
@@ -385,6 +399,7 @@ function deleteSelectedNote() {
   state.notes = state.notes.filter((item) => item.id !== note.id);
   const next = getVisibleNotes()[0] || state.notes[0] || null;
   state.selectedId = next ? next.id : null;
+  state.isEditorOpen = Boolean(next) || !isSmallScreen();
   state.isDirty = false;
   clearTimeout(state.autoSaveTimer);
   saveNotes(false);
@@ -457,6 +472,24 @@ function handleCardAction(button) {
   state.selectedId = note.id;
   saveNotes(false);
   renderAll();
+}
+
+function openEditor() {
+  state.isEditorOpen = true;
+}
+
+function closeEditor() {
+  flushAutoSave(true);
+  state.isEditorOpen = false;
+  renderAll();
+}
+
+function updateEditorShell() {
+  const isOpen = state.isEditorOpen;
+  dom.editorPanel.classList.toggle("is-closed", !isOpen);
+  dom.noteForm.hidden = !isOpen;
+  dom.editorClosedState.hidden = isOpen;
+  dom.body.classList.toggle("editor-open", isOpen && isSmallScreen());
 }
 
 function getVisibleNotes() {
@@ -647,10 +680,14 @@ function showToast(message) {
   }, 1700);
 }
 
-function focusEditorOnSmallScreen() {
-  if (window.matchMedia("(max-width: 820px)").matches) {
-    document.querySelector(".editor-panel").scrollIntoView({ behavior: "smooth", block: "start" });
+function resetEditorScrollOnSmallScreen() {
+  if (isSmallScreen()) {
+    dom.editorPanel.scrollTop = 0;
   }
+}
+
+function isSmallScreen() {
+  return window.matchMedia("(max-width: 820px)").matches;
 }
 
 function createId() {
