@@ -64,6 +64,7 @@ function cacheDom() {
   dom.noteForm = document.getElementById("noteForm");
   dom.editorHeading = document.getElementById("editorHeading");
   dom.saveState = document.getElementById("saveState");
+  dom.keyboardDismissButton = document.getElementById("keyboardDismissButton");
   dom.closeEditorButton = document.getElementById("closeEditorButton");
   dom.titleInput = document.getElementById("titleInput");
   dom.bodyInput = document.getElementById("bodyInput");
@@ -124,7 +125,10 @@ function bindEvents() {
   });
 
   dom.noteForm.addEventListener("submit", (event) => event.preventDefault());
+  dom.noteForm.addEventListener("click", handleEditorBlankTap);
   dom.editorOverlay.addEventListener("click", closeEditor);
+  dom.keyboardDismissButton.addEventListener("pointerdown", dismissKeyboard);
+  dom.keyboardDismissButton.addEventListener("click", dismissKeyboard);
   dom.closeEditorButton.addEventListener("click", closeEditor);
   dom.deleteButton.addEventListener("click", deleteSelectedNote);
   window.addEventListener("resize", updateEditorShell);
@@ -502,6 +506,24 @@ function updateEditorShell() {
   dom.noteForm.hidden = !isOpen;
   dom.editorClosedState.hidden = isOpen;
   dom.body.classList.toggle("editor-open", isOpen && isSmallScreen());
+}
+
+function dismissKeyboard() {
+  if (!isSmallScreen()) return;
+
+  const activeElement = document.activeElement;
+  if (activeElement && typeof activeElement.blur === "function") {
+    activeElement.blur();
+  }
+
+  flushAutoSave(true);
+}
+
+function handleEditorBlankTap(event) {
+  if (!state.isEditorOpen || !isSmallScreen()) return;
+  if (event.target.closest("input, textarea, select, button, label")) return;
+
+  dismissKeyboard();
 }
 
 function handleSheetTouchStart(event) {

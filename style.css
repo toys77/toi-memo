@@ -263,6 +263,10 @@ h2 {
   line-height: 1;
 }
 
+.keyboard-dismiss-button {
+  display: none;
+}
+
 .note-count,
 .save-state {
   display: inline-flex;
@@ -752,6 +756,25 @@ h2 {
     border-radius: 999px;
     font-size: 1.65rem;
     font-weight: 700;
+  }
+
+  .keyboard-dismiss-button {
+    display: inline-flex;
+    min-width: 64px;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0 14px;
+    color: var(--text);
+    background: var(--surface-2);
+    font-weight: 700;
+  }
+
+  .keyboard-dismiss-button:hover {
+    border-color: var(--border-strong);
+    background: var(--surface-3);
   }
 
   .body-input {
