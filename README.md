@@ -8,12 +8,18 @@
 index.html
 style.css
 script.js
+manifest.json
+service-worker.js
+icon.svg
 README.md
 ```
 
 - `index.html`: 画面の構造
 - `style.css`: 見た目、ダークモード、スマホ対応
 - `script.js`: メモの保存、検索、並び替え、インポート/エクスポート
+- `manifest.json`: PWAとしてホーム画面に追加するための設定
+- `service-worker.js`: オフライン表示用のキャッシュ処理
+- `icon.svg`: ホーム画面用の簡易アイコン
 - `README.md`: 使い方と公開手順
 
 ## 使い方
@@ -36,7 +42,35 @@ README.md
 toiMemo.notes
 toiMemo.theme
 toiMemo.seeded
+toiMemo.lastExportAt
 ```
+
+## 設定とバックアップ
+
+ヘッダーの `設定` を押すと、設定画面を開けます。
+
+設定画面では次の情報を確認できます。
+
+- `TOI MEMO v1.1.0`
+- 現在のメモ数
+- 最終バックアップ日時
+- バックアップ推奨メッセージ
+
+JSONエクスポートに成功すると、最終バックアップ日時が `toiMemo.lastExportAt` に保存されます。メモ本文の保存先である `toiMemo.notes` とは別のキーなので、既存メモのデータは変更されません。
+
+メモが5件以上あり、まだ一度もエクスポートしていない場合は、バックアップ推奨メッセージが表示されます。最後のエクスポートから7日以上経っている場合も、同じくバックアップをおすすめします。
+
+表示される文:
+
+```txt
+大事なメモを守るため、そろそろエクスポートしておくと安心です。
+```
+
+## PWA更新通知
+
+PWA更新が検出されると、画面下に `新しいバージョンがあります。更新しますか？` と表示されます。
+
+`更新する` を押すと、新しいService Workerに切り替えてページを再読み込みします。`後で` を押すと通知だけを閉じます。
 
 同じブラウザ、同じURLで開くと保存したメモが読み込まれます。ブラウザのサイトデータを削除するとメモも消えるため、大事なメモは定期的に `Export` してください。
 
@@ -58,7 +92,7 @@ toiMemo.seeded
 ## GitHub Pagesで公開する手順
 
 1. GitHubで新しいリポジトリを作ります。
-2. `index.html`、`style.css`、`script.js`、`README.md` をリポジトリ直下にアップロードします。
+2. `index.html`、`style.css`、`script.js`、`manifest.json`、`service-worker.js`、`icon.svg`、`README.md` をリポジトリ直下にアップロードします。
 3. リポジトリの `Settings` を開きます。
 4. 左メニューの `Pages` を開きます。
 5. `Build and deployment` の `Source` で `Deploy from a branch` を選びます。
@@ -92,15 +126,35 @@ const PRIORITY_SCORE = { "高": 3, "中": 2, "低": 1 };
 }
 ```
 
-PWA化したい場合は、次のファイルを追加する構成にすると進めやすいです。
+## PWAとしてホーム画面に追加する
+
+`TOI MEMO` はPWA対応済みです。GitHub Pagesなどの `https://` URLで開くと、ブラウザが `manifest.json` と `service-worker.js` を読み込みます。
+
+Android Chromeの場合:
+
+1. GitHub Pagesで公開した `TOI MEMO` をChromeで開きます。
+2. 右上のメニューを開きます。
+3. `アプリをインストール` または `ホーム画面に追加` を選びます。
+4. 名前が `TOI MEMO` になっていることを確認して追加します。
+
+iPhone Safariの場合:
+
+1. GitHub Pagesで公開した `TOI MEMO` をSafariで開きます。
+2. 共有ボタンを押します。
+3. `ホーム画面に追加` を選びます。
+4. 名前が `TOI MEMO` になっていることを確認して追加します。
+
+オフライン時は、最低限 `index.html`、`style.css`、`script.js`、`manifest.json`、`icon.svg` がキャッシュから読み込まれます。メモ本体はこれまで通りブラウザの `localStorage` に保存されるため、PWA化しても保存方式は変わりません。
+
+PWA関連ファイルは次の構成です。
 
 ```txt
 manifest.json
-sw.js
-icons/
+service-worker.js
+icon.svg
 ```
 
-その場合は `index.html` に `manifest.json` へのリンクを追加し、`script.js` の最後でService Workerを登録します。
+Service Workerは `file://` では動作しないため、ローカルで `index.html` を直接開いた場合は登録されません。GitHub Pagesで公開したURLでは登録されます。
 
 ## メモのデータ構造
 

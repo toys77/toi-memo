@@ -1,9 +1,13 @@
 "use strict";
 
+const APP_VERSION = "1.1.0";
+const BACKUP_RECOMMEND_DAYS = 7;
+
 const STORAGE_KEYS = {
   notes: "toiMemo.notes",
   theme: "toiMemo.theme",
-  seeded: "toiMemo.seeded"
+  seeded: "toiMemo.seeded",
+  lastExportAt: "toiMemo.lastExportAt"
 };
 
 const CATEGORIES = ["全部", "アイデア", "就活", "授業", "バンド", "創作", "ゲーム", "日記", "その他"];
@@ -22,6 +26,8 @@ const state = {
   sheetTouchStartX: 0,
   sheetTouchDeltaY: 0,
   isSheetDragging: false,
+  waitingWorker: null,
+  isUpdateReloading: false,
   autoSaveTimer: null,
   isDirty: false,
   toastTimer: null
@@ -30,6 +36,7 @@ const state = {
 const dom = {};
 
 document.addEventListener("DOMContentLoaded", init);
+window.addEventListener("load", registerServiceWorker);
 
 // 起動時にDOM取得、保存データ読み込み、初回サンプル投入をまとめて行います。
 function init() {
@@ -48,6 +55,7 @@ function init() {
 function cacheDom() {
   dom.body = document.body;
   dom.themeToggle = document.getElementById("themeToggle");
+  dom.settingsButton = document.getElementById("settingsButton");
   dom.exportButton = document.getElementById("exportButton");
   dom.importInput = document.getElementById("importInput");
   dom.newNoteButton = document.getElementById("newNoteButton");
@@ -77,6 +85,17 @@ function cacheDom() {
   dom.updatedAtText = document.getElementById("updatedAtText");
   dom.charCount = document.getElementById("charCount");
   dom.deleteButton = document.getElementById("deleteButton");
+  dom.settingsModal = document.getElementById("settingsModal");
+  dom.settingsBackdrop = document.getElementById("settingsBackdrop");
+  dom.settingsCloseButton = document.getElementById("settingsCloseButton");
+  dom.settingsExportButton = document.getElementById("settingsExportButton");
+  dom.settingsVersion = document.getElementById("settingsVersion");
+  dom.settingsNoteCount = document.getElementById("settingsNoteCount");
+  dom.settingsLastBackup = document.getElementById("settingsLastBackup");
+  dom.backupAdvice = document.getElementById("backupAdvice");
+  dom.updateBanner = document.getElementById("updateBanner");
+  dom.updateReloadButton = document.getElementById("updateReloadButton");
+  dom.updateDismissButton = document.getElementById("updateDismissButton");
   dom.toast = document.getElementById("toast");
 }
 
@@ -90,6 +109,7 @@ function setupCategoryOptions() {
 function bindEvents() {
   dom.newNoteButton.addEventListener("click", createNote);
   dom.themeToggle.addEventListener("click", toggleTheme);
+  dom.settingsButton.addEventListener("click", openSettings);
   dom.exportButton.addEventListener("click", exportNotes);
   dom.importInput.addEventListener("change", importNotes);
 
@@ -131,7 +151,17 @@ function bindEvents() {
   dom.keyboardDismissButton.addEventListener("click", dismissKeyboard);
   dom.closeEditorButton.addEventListener("click", closeEditor);
   dom.deleteButton.addEventListener("click", deleteSelectedNote);
+  dom.settingsBackdrop.addEventListener("click", closeSettings);
+  dom.settingsCloseButton.addEventListener("click", closeSettings);
+  dom.settingsExportButton.addEventListener("click", exportNotes);
+  dom.updateReloadButton.addEventListener("click", applyServiceWorkerUpdate);
+  dom.updateDismissButton.addEventListener("click", hideUpdateNotice);
   window.addEventListener("resize", updateEditorShell);
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !dom.settingsModal.hidden) {
+      closeSettings();
+    }
+  });
   dom.editorSheetHeader.addEventListener("touchstart", handleSheetTouchStart, { passive: true });
   dom.editorSheetHeader.addEventListener("touchmove", handleSheetTouchMove, { passive: false });
   dom.editorSheetHeader.addEventListener("touchend", handleSheetTouchEnd);
@@ -254,6 +284,7 @@ function createSampleNotes() {
 function renderAll() {
   renderNotes();
   renderEditor();
+  renderSettings();
 }
 
 function renderCategoryFilters() {
@@ -614,10 +645,12 @@ function sortNotes(a, b) {
 function exportNotes() {
   flushAutoSave(false);
 
+  const exportedAt = new Date().toISOString();
   const payload = {
     app: "TOI MEMO",
     version: 1,
-    exportedAt: new Date().toISOString(),
+    appVersion: APP_VERSION,
+    exportedAt,
     notes: state.notes
   };
   const json = JSON.stringify(payload, null, 2);
@@ -630,6 +663,8 @@ function exportNotes() {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+  localStorage.setItem(STORAGE_KEYS.lastExportAt, exportedAt);
+  renderSettings();
   showToast("JSONを書き出しました");
 }
 
@@ -690,6 +725,45 @@ function normalizeImportedNotes(input) {
       updatedAt: isValidDate(raw?.updatedAt) ? raw.updatedAt : now
     };
   });
+}
+
+function openSettings() {
+  flushAutoSave(false);
+  renderSettings();
+  dom.settingsModal.hidden = false;
+  dom.settingsCloseButton.focus();
+}
+
+function closeSettings() {
+  dom.settingsModal.hidden = true;
+}
+
+function renderSettings() {
+  if (!dom.settingsVersion) return;
+
+  const lastExportAt = getLastExportAt();
+  dom.settingsVersion.textContent = `TOI MEMO v${APP_VERSION}`;
+  dom.settingsNoteCount.textContent = `${state.notes.length}件`;
+  dom.settingsLastBackup.textContent = lastExportAt ? formatDateTime(lastExportAt) : "未バックアップ";
+  dom.backupAdvice.hidden = !shouldRecommendBackup(lastExportAt);
+}
+
+function getLastExportAt() {
+  const value = localStorage.getItem(STORAGE_KEYS.lastExportAt);
+  return isValidDate(value) ? value : "";
+}
+
+function shouldRecommendBackup(lastExportAt) {
+  if (state.notes.length >= 5 && !lastExportAt) {
+    return true;
+  }
+
+  if (!lastExportAt) {
+    return false;
+  }
+
+  const backupAge = Date.now() - Date.parse(lastExportAt);
+  return backupAge >= BACKUP_RECOMMEND_DAYS * 24 * 60 * 60 * 1000;
 }
 
 function normalizeTags(value) {
@@ -845,4 +919,68 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function registerServiceWorker() {
+  const canRegister = "serviceWorker" in navigator && /^https?:$/.test(window.location.protocol);
+  if (!canRegister) return;
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (state.isUpdateReloading) return;
+    state.isUpdateReloading = true;
+    window.location.reload();
+  });
+
+  navigator.serviceWorker.register("./service-worker.js")
+    .then((registration) => {
+      watchServiceWorkerUpdate(registration);
+      registration.update();
+    })
+    .catch((error) => {
+      console.warn("TOI MEMO: Service Worker registration failed.", error);
+    });
+}
+
+function watchServiceWorkerUpdate(registration) {
+  if (registration.waiting && navigator.serviceWorker.controller) {
+    showUpdateNotice(registration.waiting);
+  }
+
+  registration.addEventListener("updatefound", () => {
+    const worker = registration.installing;
+    if (!worker) return;
+
+    worker.addEventListener("statechange", () => {
+      if (worker.state === "installed" && navigator.serviceWorker.controller) {
+        showUpdateNotice(worker);
+      }
+    });
+  });
+}
+
+function showUpdateNotice(worker) {
+  state.waitingWorker = worker;
+  dom.updateBanner.hidden = false;
+}
+
+function hideUpdateNotice() {
+  dom.updateBanner.hidden = true;
+}
+
+function applyServiceWorkerUpdate() {
+  hideUpdateNotice();
+
+  if (state.waitingWorker) {
+    state.waitingWorker.postMessage({ type: "SKIP_WAITING" });
+
+    setTimeout(() => {
+      if (state.isUpdateReloading) return;
+      state.isUpdateReloading = true;
+      window.location.reload();
+    }, 1200);
+    return;
+  }
+
+  state.isUpdateReloading = true;
+  window.location.reload();
 }

@@ -1,0 +1,20 @@
+{
+  "id": "./",
+  "name": "TOI MEMO",
+  "short_name": "TOI MEMO",
+  "description": "A lightweight personal memo app that works in your browser.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#101010",
+  "theme_color": "#111111",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

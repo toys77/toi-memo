@@ -23,6 +23,7 @@
 
       <div class="header-actions" aria-label="アプリ操作">
         <button class="ghost-button" id="themeToggle" type="button">Light</button>
+        <button class="ghost-button" id="settingsButton" type="button">設定</button>
         <button class="ghost-button" id="exportButton" type="button">Export</button>
         <label class="ghost-button import-label" for="importInput">
           Import
@@ -145,6 +146,48 @@
         </form>
       </section>
     </main>
+  </div>
+
+  <div class="settings-modal" id="settingsModal" hidden>
+    <div class="settings-backdrop" id="settingsBackdrop"></div>
+    <section class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="settings-header">
+        <div>
+          <p class="section-kicker">Settings</p>
+          <h2 id="settingsTitle">設定</h2>
+        </div>
+        <button class="icon-button settings-close-button" id="settingsCloseButton" type="button" aria-label="設定を閉じる">×</button>
+      </div>
+
+      <div class="settings-body">
+        <p class="settings-version" id="settingsVersion">TOI MEMO</p>
+
+        <div class="settings-grid">
+          <div class="settings-item">
+            <span>現在のメモ数</span>
+            <strong id="settingsNoteCount">0件</strong>
+          </div>
+          <div class="settings-item">
+            <span>最終バックアップ</span>
+            <strong id="settingsLastBackup">未バックアップ</strong>
+          </div>
+        </div>
+
+        <div class="backup-advice" id="backupAdvice" hidden>
+          大事なメモを守るため、そろそろエクスポートしておくと安心です。
+        </div>
+
+        <button class="primary-button" id="settingsExportButton" type="button">JSONでバックアップ</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="update-banner" id="updateBanner" hidden role="status" aria-live="polite">
+    <p>新しいバージョンがあります。更新しますか？</p>
+    <div class="update-actions">
+      <button class="ghost-button" id="updateReloadButton" type="button">更新する</button>
+      <button class="ghost-button" id="updateDismissButton" type="button">後で</button>
+    </div>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
