@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111111">
+  <title>TOI MEMO</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="brand">
+        <p class="brand-kicker">Personal notes</p>
+        <h1>TOI MEMO</h1>
+      </div>
+
+      <div class="header-actions" aria-label="アプリ操作">
+        <button class="ghost-button" id="themeToggle" type="button">Light</button>
+        <button class="ghost-button" id="exportButton" type="button">Export</button>
+        <label class="ghost-button import-label" for="importInput">
+          Import
+          <input id="importInput" type="file" accept="application/json,.json">
+        </label>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="control-panel" aria-label="メモ操作">
+        <button class="primary-button" id="newNoteButton" type="button">新規メモ</button>
+
+        <label class="field-label" for="searchInput">検索</label>
+        <input id="searchInput" class="text-input" type="search" placeholder="タイトル・本文・タグ・カテゴリ">
+
+        <label class="field-label" for="sortSelect">並び替え</label>
+        <select id="sortSelect" class="select-input">
+          <option value="pinned">ピン留め優先</option>
+          <option value="updated">更新日時が新しい順</option>
+          <option value="created">作成日時が新しい順</option>
+          <option value="priority">重要度順</option>
+          <option value="favorite">お気に入り優先</option>
+        </select>
+
+        <div class="category-block">
+          <p class="field-label">カテゴリ</p>
+          <div class="category-list" id="categoryFilters" aria-label="カテゴリフィルター"></div>
+        </div>
+      </aside>
+
+      <section class="notes-panel" aria-label="メモ一覧">
+        <div class="panel-heading">
+          <div>
+            <p class="section-kicker">Library</p>
+            <h2>メモ一覧</h2>
+          </div>
+          <span class="note-count" id="noteCount">0件</span>
+        </div>
+
+        <div class="notes-grid" id="notesGrid"></div>
+
+        <div class="empty-state" id="emptyState" hidden>
+          <p class="empty-title">メモがありません</p>
+          <p>思いついたことを、まず1つだけ残しておきましょう。</p>
+        </div>
+      </section>
+
+      <section class="editor-panel" aria-label="メモ編集">
+        <form class="editor-form" id="noteForm">
+          <div class="panel-heading editor-heading">
+            <div>
+              <p class="section-kicker">Editor</p>
+              <h2 id="editorHeading">メモを選択</h2>
+            </div>
+            <span class="save-state" id="saveState">Ready</span>
+          </div>
+
+          <label class="field-label" for="titleInput">タイトル</label>
+          <input id="titleInput" class="text-input title-input" type="text" maxlength="120" placeholder="タイトル">
+
+          <label class="field-label" for="bodyInput">本文</label>
+          <textarea id="bodyInput" class="body-input" rows="13" placeholder="短くても、まとまっていなくてもOK"></textarea>
+          <div class="form-note">
+            <span id="charCount">0文字</span>
+          </div>
+
+          <div class="form-grid">
+            <div>
+              <label class="field-label" for="categorySelect">カテゴリ</label>
+              <select id="categorySelect" class="select-input"></select>
+            </div>
+
+            <div>
+              <label class="field-label" for="prioritySelect">重要度</label>
+              <select id="prioritySelect" class="select-input">
+                <option value="低">低</option>
+                <option value="中">中</option>
+                <option value="高">高</option>
+              </select>
+            </div>
+          </div>
+
+          <label class="field-label" for="tagsInput">タグ</label>
+          <input id="tagsInput" class="text-input" type="text" placeholder="カンマ区切り 例: SIer, 面接, アイデア">
+
+          <div class="toggle-row">
+            <label class="check-toggle">
+              <input id="pinnedInput" type="checkbox">
+              <span>ピン留め</span>
+            </label>
+
+            <label class="check-toggle">
+              <input id="favoriteInput" type="checkbox">
+              <span>お気に入り</span>
+            </label>
+          </div>
+
+          <div class="date-box" aria-live="polite">
+            <p><span>作成</span><time id="createdAtText">-</time></p>
+            <p><span>更新</span><time id="updatedAtText">-</time></p>
+          </div>
+
+          <div class="editor-actions">
+            <button class="danger-button" id="deleteButton" type="button">削除</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
