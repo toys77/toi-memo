@@ -51,7 +51,7 @@ toiMemo.lastExportAt
 
 設定画面では次の情報を確認できます。
 
-- `TOI MEMO v1.3.0`
+- `TOI MEMO v1.4.0`
 - 現在のメモ数
 - 最終バックアップ日時
 - バックアップ推奨メッセージ
@@ -77,6 +77,16 @@ PWA更新が検出されると、画面下に `新しいバージョンがあり
 v1.3.0では、黒・白・グレーを基調にしたデザインシステムを整理しました。CSS変数で色、余白、角丸、影、文字サイズを管理し、ボタン、カテゴリ、タグ、メモカード、設定画面、スマホの編集ボトムシートの見た目を統一しています。
 
 PWAアイコンの `icon.svg` も更新しました。黒背景に白い紙アウトラインを描いた、TOI MEMOらしいミニマルなメモアイコンです。maskable iconとして使っても切れにくいよう、外周に余白を残しています。
+
+## Adobe Fonts
+
+v1.4.0ではAdobe Fontsを導入しました。`index.html` の `<head>` 内でkit `nyu7vux` を読み込み、`style.css` では次のfont-familyを使っています。
+
+- `grappa-variable`
+- `grappa-two-variable`
+- `ads-route7`
+
+見出し、ボタン、メモタイトルはAdobe Fontsを優先し、本文や入力欄は読みやすさを優先してsystem-ui系のfallbackを指定しています。Adobe Fontsが読み込めない場合でも、`system-ui, -apple-system, BlinkMacSystemFont, sans-serif` に落ちるため、表示や操作は継続できます。
 
 同じブラウザ、同じURLで開くと保存したメモが読み込まれます。ブラウザのサイトデータを削除するとメモも消えるため、大事なメモは定期的に `Export` してください。
 
