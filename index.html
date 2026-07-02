@@ -64,6 +64,8 @@
         </div>
       </section>
 
+      <div class="editor-overlay" id="editorOverlay" aria-hidden="true"></div>
+
       <section class="editor-panel" id="editorPanel" aria-label="メモ編集">
         <div class="editor-closed-state" id="editorClosedState" hidden>
           <p class="empty-title">メモを選択すると編集できます</p>
@@ -71,14 +73,17 @@
         </div>
 
         <form class="editor-form" id="noteForm">
-          <div class="panel-heading editor-heading">
-            <div>
-              <p class="section-kicker">Editor</p>
-              <h2 id="editorHeading">メモを選択</h2>
-            </div>
-            <div class="editor-tools">
-              <span class="save-state" id="saveState">Ready</span>
-              <button class="icon-button editor-close-button" id="closeEditorButton" type="button" aria-label="エディタを閉じる">×</button>
+          <div class="editor-sheet-header" id="editorSheetHeader">
+            <div class="editor-drag-handle" aria-hidden="true"></div>
+            <div class="panel-heading editor-heading">
+              <div>
+                <p class="section-kicker">Editor</p>
+                <h2 id="editorHeading">メモを選択</h2>
+              </div>
+              <div class="editor-tools">
+                <span class="save-state" id="saveState">Ready</span>
+                <button class="icon-button editor-close-button" id="closeEditorButton" type="button" aria-label="エディタを閉じる">×</button>
+              </div>
             </div>
           </div>
 

@@ -18,6 +18,10 @@ const state = {
   searchQuery: "",
   sortMode: "pinned",
   isEditorOpen: true,
+  sheetTouchStartY: 0,
+  sheetTouchStartX: 0,
+  sheetTouchDeltaY: 0,
+  isSheetDragging: false,
   autoSaveTimer: null,
   isDirty: false,
   toastTimer: null
@@ -53,7 +57,9 @@ function cacheDom() {
   dom.notesGrid = document.getElementById("notesGrid");
   dom.emptyState = document.getElementById("emptyState");
   dom.noteCount = document.getElementById("noteCount");
+  dom.editorOverlay = document.getElementById("editorOverlay");
   dom.editorPanel = document.getElementById("editorPanel");
+  dom.editorSheetHeader = document.getElementById("editorSheetHeader");
   dom.editorClosedState = document.getElementById("editorClosedState");
   dom.noteForm = document.getElementById("noteForm");
   dom.editorHeading = document.getElementById("editorHeading");
@@ -118,9 +124,14 @@ function bindEvents() {
   });
 
   dom.noteForm.addEventListener("submit", (event) => event.preventDefault());
+  dom.editorOverlay.addEventListener("click", closeEditor);
   dom.closeEditorButton.addEventListener("click", closeEditor);
   dom.deleteButton.addEventListener("click", deleteSelectedNote);
   window.addEventListener("resize", updateEditorShell);
+  dom.editorSheetHeader.addEventListener("touchstart", handleSheetTouchStart, { passive: true });
+  dom.editorSheetHeader.addEventListener("touchmove", handleSheetTouchMove, { passive: false });
+  dom.editorSheetHeader.addEventListener("touchend", handleSheetTouchEnd);
+  dom.editorSheetHeader.addEventListener("touchcancel", cancelSheetDrag);
 
   const autoSaveTargets = [
     dom.titleInput,
@@ -481,6 +492,7 @@ function openEditor() {
 function closeEditor() {
   flushAutoSave(true);
   state.isEditorOpen = false;
+  cancelSheetDrag();
   renderAll();
 }
 
@@ -490,6 +502,51 @@ function updateEditorShell() {
   dom.noteForm.hidden = !isOpen;
   dom.editorClosedState.hidden = isOpen;
   dom.body.classList.toggle("editor-open", isOpen && isSmallScreen());
+}
+
+function handleSheetTouchStart(event) {
+  if (!state.isEditorOpen || !isSmallScreen() || event.touches.length !== 1) return;
+  if (event.target.closest("button, input, select, textarea, label")) return;
+
+  const touch = event.touches[0];
+  state.sheetTouchStartY = touch.clientY;
+  state.sheetTouchStartX = touch.clientX;
+  state.sheetTouchDeltaY = 0;
+  state.isSheetDragging = true;
+  dom.editorPanel.classList.add("is-dragging");
+}
+
+function handleSheetTouchMove(event) {
+  if (!state.isSheetDragging || event.touches.length !== 1) return;
+
+  const touch = event.touches[0];
+  const deltaY = touch.clientY - state.sheetTouchStartY;
+  const deltaX = touch.clientX - state.sheetTouchStartX;
+  const isMostlyVertical = Math.abs(deltaY) > Math.abs(deltaX) * 1.2;
+
+  if (deltaY <= 0 || !isMostlyVertical) return;
+
+  event.preventDefault();
+  state.sheetTouchDeltaY = deltaY;
+  dom.editorPanel.style.setProperty("--sheet-drag", `${Math.min(deltaY, 180)}px`);
+}
+
+function handleSheetTouchEnd() {
+  if (!state.isSheetDragging) return;
+
+  const shouldClose = state.sheetTouchDeltaY >= 80;
+  cancelSheetDrag();
+
+  if (shouldClose) {
+    closeEditor();
+  }
+}
+
+function cancelSheetDrag() {
+  state.isSheetDragging = false;
+  state.sheetTouchDeltaY = 0;
+  dom.editorPanel.classList.remove("is-dragging");
+  dom.editorPanel.style.removeProperty("--sheet-drag");
 }
 
 function getVisibleNotes() {
