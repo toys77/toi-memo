@@ -1,6 +1,6 @@
 "use strict";
 
-const APP_VERSION = "1.4.0";
+const APP_VERSION = "1.4.2";
 const BACKUP_RECOMMEND_DAYS = 7;
 
 const STORAGE_KEYS = {
@@ -37,6 +37,7 @@ const dom = {};
 
 document.addEventListener("DOMContentLoaded", init);
 window.addEventListener("load", registerServiceWorker);
+window.addEventListener("load", logAdobeFontsStatus);
 
 // 起動時にDOM取得、保存データ読み込み、初回サンプル投入をまとめて行います。
 function init() {
@@ -983,4 +984,36 @@ function applyServiceWorkerUpdate() {
 
   state.isUpdateReloading = true;
   window.location.reload();
+}
+
+function logAdobeFontsStatus() {
+  const html = document.documentElement;
+  const logStatus = () => {
+    console.log("[TOI MEMO] Adobe Fonts className:", html.className || "(empty)");
+  };
+
+  logStatus();
+
+  if (!("MutationObserver" in window)) {
+    setTimeout(logStatus, 3200);
+    return;
+  }
+
+  const observer = new MutationObserver(() => {
+    logStatus();
+
+    if (html.classList.contains("wf-active") || html.classList.contains("wf-inactive")) {
+      observer.disconnect();
+    }
+  });
+
+  observer.observe(html, {
+    attributes: true,
+    attributeFilter: ["class"]
+  });
+
+  setTimeout(() => {
+    logStatus();
+    observer.disconnect();
+  }, 3400);
 }

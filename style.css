@@ -34,9 +34,9 @@
   --font-sm: 0.86rem;
   --font-md: 0.96rem;
   --font-lg: 1.1rem;
-  --font-system: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic", sans-serif;
-  --font-adobe: "grappa-variable", "grappa-two-variable", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-accent: "ads-route7", "grappa-variable", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-ui: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --font-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --font-logo: "ads-route7", "grappa-variable", system-ui, sans-serif;
   --shadow-sm: 0 8px 22px rgba(0, 0, 0, 0.18);
   --shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
   --shadow-lg: 0 26px 70px rgba(0, 0, 0, 0.42);
@@ -74,7 +74,7 @@ body {
   min-height: 100%;
   margin: 0;
   color: var(--text);
-  font-family: var(--font-system);
+  font-family: var(--font-body);
   background:
     linear-gradient(180deg, var(--bg-soft) 0%, var(--bg) 280px),
     var(--bg);
@@ -95,14 +95,12 @@ label.import-label {
 
 button {
   cursor: pointer;
-  font-family: var(--font-adobe);
+  font-family: var(--font-ui);
 }
 
-.wf-loading h1,
-.wf-loading h2,
-.wf-loading button,
-.wf-loading .note-title {
-  font-family: var(--font-system);
+.wf-loading .brand h1,
+.wf-inactive .brand h1 {
+  font-family: var(--font-ui);
 }
 
 button:disabled,
@@ -137,7 +135,7 @@ textarea:disabled {
 .section-kicker {
   margin: 0 0 var(--space-1);
   color: var(--subtle);
-  font-family: var(--font-adobe);
+  font-family: var(--font-ui);
   font-size: var(--font-xs);
   font-weight: 700;
   letter-spacing: 0;
@@ -152,15 +150,24 @@ p {
 
 h1 {
   margin-bottom: 0;
-  font-family: var(--font-accent);
+  font-family: var(--font-ui);
   font-size: clamp(2.1rem, 5vw, 4.4rem);
   line-height: 0.95;
   letter-spacing: 0;
 }
 
+.brand h1 {
+  font-weight: 800;
+}
+
+.wf-active .brand h1 {
+  font-family: var(--font-logo);
+  font-weight: 400;
+}
+
 h2 {
   margin-bottom: 0;
-  font-family: var(--font-adobe);
+  font-family: var(--font-ui);
   font-size: var(--font-lg);
   letter-spacing: 0;
 }
@@ -305,7 +312,7 @@ h2 {
 .settings-version {
   margin-bottom: 0;
   color: var(--text);
-  font-family: var(--font-adobe);
+  font-family: var(--font-ui);
   font-size: 1.05rem;
   font-weight: 800;
 }
@@ -332,7 +339,7 @@ h2 {
 }
 
 .settings-item strong {
-  font-family: var(--font-adobe);
+  font-family: var(--font-ui);
   text-align: right;
 }
 
@@ -465,7 +472,7 @@ h2 {
   padding: 0 10px;
   color: var(--muted);
   background: var(--surface-2);
-  font-family: var(--font-adobe);
+  font-family: var(--font-ui);
   font-size: var(--font-xs);
   white-space: nowrap;
 }
@@ -474,7 +481,7 @@ h2 {
   display: block;
   margin: 0 0 var(--space-2);
   color: var(--muted);
-  font-family: var(--font-adobe);
+  font-family: var(--font-ui);
   font-size: var(--font-xs);
   font-weight: 700;
 }
@@ -486,7 +493,7 @@ h2 {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text);
-  font-family: var(--font-system);
+  font-family: var(--font-body);
   background: color-mix(in srgb, var(--surface) 90%, var(--bg));
   outline: none;
   transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
@@ -532,7 +539,7 @@ h2 {
   border-radius: var(--radius-pill);
   padding: 0 var(--space-4);
   color: var(--muted);
-  font-family: var(--font-adobe);
+  font-family: var(--font-ui);
   background: color-mix(in srgb, var(--surface) 72%, transparent);
   text-align: left;
   font-weight: 700;
@@ -612,7 +619,7 @@ h2 {
   padding: 0 8px;
   color: var(--muted);
   background: color-mix(in srgb, var(--surface) 82%, transparent);
-  font-family: var(--font-adobe);
+  font-family: var(--font-ui);
   font-size: var(--font-xs);
   font-weight: 700;
   overflow-wrap: anywhere;
@@ -651,7 +658,7 @@ h2 {
 
 .note-title {
   margin: 0;
-  font-family: var(--font-adobe);
+  font-family: var(--font-ui);
   font-size: 1.02rem;
   line-height: 1.35;
   overflow-wrap: anywhere;
@@ -662,7 +669,7 @@ h2 {
   min-height: 4.9em;
   margin: 0;
   color: var(--muted);
-  font-family: var(--font-system);
+  font-family: var(--font-body);
   font-size: var(--font-sm);
   line-height: 1.6;
   overflow: hidden;
@@ -699,7 +706,7 @@ h2 {
 .empty-title {
   margin-bottom: var(--space-2);
   color: var(--text);
-  font-family: var(--font-adobe);
+  font-family: var(--font-ui);
   font-size: 1.1rem;
   font-weight: 700;
 }
@@ -753,7 +760,7 @@ h2 {
   border-radius: var(--radius-pill);
   padding: 0 var(--space-4);
   color: var(--muted);
-  font-family: var(--font-adobe);
+  font-family: var(--font-ui);
   background: var(--surface-2);
   cursor: pointer;
   font-weight: 700;
