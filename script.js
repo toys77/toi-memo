@@ -1,6 +1,6 @@
 "use strict";
 
-const APP_VERSION = "1.5.0";
+const APP_VERSION = "1.7.0";
 const BACKUP_RECOMMEND_DAYS = 7;
 
 const STORAGE_KEYS = {
@@ -10,7 +10,7 @@ const STORAGE_KEYS = {
   lastExportAt: "toiMemo.lastExportAt"
 };
 
-const CATEGORIES = ["全部", "アイデア", "就活", "授業", "バンド", "創作", "ゲーム", "日記", "その他"];
+const CATEGORIES = ["全部", "アイデア", "就活", "授業", "料理", "サッカー", "ゲーム", "日記", "その他"];
 const EDIT_CATEGORIES = CATEGORIES.filter((category) => category !== "全部");
 const PRIORITIES = ["低", "中", "高"];
 const PRIORITY_SCORE = { "高": 3, "中": 2, "低": 1 };
@@ -60,40 +60,35 @@ const NOTE_TEMPLATES = [
     ].join("\n\n")
   },
   {
-    id: "band-pa",
-    name: "バンドPAチェック",
-    description: "ライブ前のPA確認と反省を残す。",
-    title: "バンドメモ：ライブ前PA確認",
-    category: "バンド",
-    tags: ["バンド", "PA", "ライブ"],
+    id: "cooking-prep",
+    name: "料理作り置きメモ",
+    description: "作るもの、買うもの、保存の目安をまとめる。",
+    title: "料理メモ：作り置き案",
+    category: "料理",
+    tags: ["料理", "作り置き", "買い物"],
     body: [
-      "## ライブ名",
-      "## 日付",
-      "## 使用機材",
-      "## 事前確認\n- [ ] マイク\n- [ ] DI\n- [ ] ケーブル\n- [ ] 電源\n- [ ] モニター\n- [ ] 音量バランス",
-      "## リハで確認すること",
-      "## 本番中の注意点",
-      "## 次回への反省"
+      "## 作りたいもの",
+      "## 材料",
+      "## 買うもの",
+      "## 下準備\n- [ ] 食材を切る\n- [ ] 調味料を確認する\n- [ ] 保存容器を用意する",
+      "## 保存方法",
+      "## 次に作るときのメモ"
     ].join("\n\n")
   },
   {
-    id: "creative-character",
-    name: "創作キャラ設定",
-    description: "キャラクターの設定を抜け漏れなく作る。",
-    title: "創作メモ：キャラクター設定",
-    category: "創作",
-    tags: ["創作", "キャラクター", "設定"],
+    id: "soccer-watch",
+    name: "サッカー観戦メモ",
+    description: "試合を見ながら気づいたことを記録する。",
+    title: "サッカーメモ：試合メモ",
+    category: "サッカー",
+    tags: ["サッカー", "観戦", "戦術"],
     body: [
-      "## 名前",
-      "## 年齢・立場",
-      "## 外見",
-      "## 性格",
-      "## 口調",
-      "## 目的",
-      "## 弱点",
-      "## 過去",
-      "## 物語での役割",
-      "## 印象的なセリフ"
+      "## 試合",
+      "## 注目した選手",
+      "## 攻撃で気づいたこと",
+      "## 守備で気づいたこと",
+      "## 印象に残った場面",
+      "## 次に見るポイント"
     ].join("\n\n")
   },
   {
@@ -129,6 +124,88 @@ const NOTE_TEMPLATES = [
       "## 反省",
       "## 明日やること"
     ].join("\n\n")
+  }
+];
+
+const SAMPLE_NOTE_DATA = [
+  {
+    title: "就活メモ：企業研究で見るポイント",
+    body: "事業内容、主要顧客、強み、働き方、研修制度、選考フローを確認する。\n面接では「なぜその会社なのか」を自分の経験とつなげて話せるようにする。",
+    category: "就活",
+    tags: ["就活", "企業研究", "面接"],
+    priority: "高",
+    pinned: true,
+    favorite: true
+  },
+  {
+    title: "料理メモ：作り置きの候補",
+    body: "鶏むね肉、卵、野菜を使って、数日分の作り置きを考える。\n調味料、保存容器、冷蔵保存できる日数もメモしておく。",
+    category: "料理",
+    tags: ["料理", "作り置き", "買い物"],
+    priority: "中",
+    pinned: false,
+    favorite: true
+  },
+  {
+    title: "サッカーメモ：試合を見るときのポイント",
+    body: "ボールを持っていない選手の動き、守備の戻り方、サイドの使い方を見る。\n得点シーンだけでなく、チャンスが生まれる前の動きも記録する。",
+    category: "サッカー",
+    tags: ["サッカー", "観戦", "戦術"],
+    priority: "中",
+    pinned: false,
+    favorite: false
+  },
+  {
+    title: "授業メモ：レポート提出前チェック",
+    body: "提出形式、字数、参考文献、ファイル名、誤字脱字を確認する。\n提出後はスクリーンショットや提出完了画面を残しておく。",
+    category: "授業",
+    tags: ["授業", "レポート", "チェック"],
+    priority: "中",
+    pinned: false,
+    favorite: false
+  },
+  {
+    title: "買い物メモ：週末に買うもの",
+    body: "日用品、食材、消耗品をまとめて確認する。\n買うものを事前に分けておくと、無駄な買い物を減らせる。",
+    category: "その他",
+    tags: ["買い物", "生活"],
+    priority: "低",
+    pinned: false,
+    favorite: true
+  }
+];
+
+// 以前の初期サンプルと完全一致するものだけ、公開向けサンプルへ置き換えます。
+const LEGACY_SAMPLE_NOTES = [
+  {
+    title: "就活メモ：SIer企業研究で見るポイント",
+    body: "事業領域、主要顧客、上流工程の比率、研修制度、配属の決まり方を見る。面接ではなぜSIerか、なぜその会社かを分けて話せるようにする。",
+    category: "就活",
+    tags: ["SIer", "企業研究", "面接"]
+  },
+  {
+    title: "バンドメモ：ライブ前PA確認リスト",
+    body: "リハで返しの音量、クリック有無、ギターの音作り、同期音源の出力、曲間MCの流れを確認。終演後の物販導線も忘れない。",
+    category: "バンド",
+    tags: ["ライブ", "PA", "確認"]
+  },
+  {
+    title: "創作メモ：新作ノベルゲームの設定案",
+    body: "舞台は雨が止まない地方都市。主人公は記憶の一部を失っていて、選択肢によって街の記録そのものが書き換わる。",
+    category: "創作",
+    tags: ["ノベルゲーム", "設定", "世界観"]
+  },
+  {
+    title: "授業メモ：レポート提出前チェック",
+    body: "引用形式、参考文献、提出ファイル名、字数、図表番号、誤字を確認。提出後にスクリーンショットを残す。",
+    category: "授業",
+    tags: ["レポート", "提出", "チェック"]
+  },
+  {
+    title: "ゲーム案：カードローグライクのシステム案",
+    body: "カードは戦闘後に選ぶだけでなく、休憩地点で合成できる。デッキ枚数が少ないほど強いが、状態異常カードを受けやすくする。",
+    category: "ゲーム",
+    tags: ["カード", "ローグライク", "システム"]
   }
 ];
 
@@ -176,6 +253,7 @@ function cacheDom() {
   dom.exportButton = document.getElementById("exportButton");
   dom.importInput = document.getElementById("importInput");
   dom.newNoteButton = document.getElementById("newNoteButton");
+  dom.quickCreateButton = document.getElementById("quickCreateButton");
   dom.searchInput = document.getElementById("searchInput");
   dom.sortSelect = document.getElementById("sortSelect");
   dom.categoryFilters = document.getElementById("categoryFilters");
@@ -223,7 +301,18 @@ function cacheDom() {
 }
 
 function setupCategoryOptions() {
-  dom.categorySelect.innerHTML = EDIT_CATEGORIES.map((category) => (
+  renderCategorySelect("その他");
+}
+
+function renderCategorySelect(selectedCategory = "その他") {
+  const currentCategory = toStringValue(selectedCategory).trim();
+  const categories = [...EDIT_CATEGORIES];
+
+  if (currentCategory && currentCategory !== "全部" && !categories.includes(currentCategory)) {
+    categories.push(currentCategory);
+  }
+
+  dom.categorySelect.innerHTML = categories.map((category) => (
     `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`
   )).join("");
 }
@@ -231,6 +320,7 @@ function setupCategoryOptions() {
 // 入力欄は自動保存、一覧やカテゴリはクリックで状態更新する構成です。
 function bindEvents() {
   dom.newNoteButton.addEventListener("click", openTemplatePicker);
+  dom.quickCreateButton.addEventListener("click", openTemplatePicker);
   dom.themeToggle.addEventListener("click", toggleTheme);
   dom.settingsButton.addEventListener("click", openSettings);
   dom.exportButton.addEventListener("click", exportNotes);
@@ -325,7 +415,14 @@ function loadNotes() {
   if (stored) {
     try {
       const parsed = JSON.parse(stored);
-      state.notes = normalizeImportedNotes(parsed);
+      const normalizedNotes = normalizeImportedNotes(parsed);
+      const migration = replaceLegacySampleNotes(normalizedNotes);
+      state.notes = migration.notes;
+
+      if (migration.changed) {
+        saveNotes(false);
+      }
+
       return;
     } catch (error) {
       console.warn("TOI MEMO: 保存データを読み込めませんでした。", error);
@@ -353,55 +450,7 @@ function saveNotes(showMessage = true) {
 // サンプルはここを書き換えるだけで差し替えられます。
 function createSampleNotes() {
   const now = Date.now();
-  const sampleData = [
-    {
-      title: "就活メモ：SIer企業研究で見るポイント",
-      body: "事業領域、主要顧客、上流工程の比率、研修制度、配属の決まり方を見る。面接ではなぜSIerか、なぜその会社かを分けて話せるようにする。",
-      category: "就活",
-      tags: ["SIer", "企業研究", "面接"],
-      priority: "高",
-      pinned: true,
-      favorite: true
-    },
-    {
-      title: "バンドメモ：ライブ前PA確認リスト",
-      body: "リハで返しの音量、クリック有無、ギターの音作り、同期音源の出力、曲間MCの流れを確認。終演後の物販導線も忘れない。",
-      category: "バンド",
-      tags: ["ライブ", "PA", "確認"],
-      priority: "中",
-      pinned: false,
-      favorite: true
-    },
-    {
-      title: "創作メモ：新作ノベルゲームの設定案",
-      body: "舞台は雨が止まない地方都市。主人公は記憶の一部を失っていて、選択肢によって街の記録そのものが書き換わる。",
-      category: "創作",
-      tags: ["ノベルゲーム", "設定", "世界観"],
-      priority: "高",
-      pinned: false,
-      favorite: false
-    },
-    {
-      title: "授業メモ：レポート提出前チェック",
-      body: "引用形式、参考文献、提出ファイル名、字数、図表番号、誤字を確認。提出後にスクリーンショットを残す。",
-      category: "授業",
-      tags: ["レポート", "提出", "チェック"],
-      priority: "中",
-      pinned: false,
-      favorite: false
-    },
-    {
-      title: "ゲーム案：カードローグライクのシステム案",
-      body: "カードは戦闘後に選ぶだけでなく、休憩地点で合成できる。デッキ枚数が少ないほど強いが、状態異常カードを受けやすくする。",
-      category: "ゲーム",
-      tags: ["カード", "ローグライク", "システム"],
-      priority: "低",
-      pinned: false,
-      favorite: true
-    }
-  ];
-
-  return sampleData.map((note, index) => ({
+  return SAMPLE_NOTE_DATA.map((note, index) => ({
     id: createId(),
     title: note.title,
     body: note.body,
@@ -413,6 +462,45 @@ function createSampleNotes() {
     createdAt: new Date(now - index * 1000 * 60 * 60).toISOString(),
     updatedAt: new Date(now - index * 1000 * 60 * 30).toISOString()
   }));
+}
+
+function replaceLegacySampleNotes(notes) {
+  let changed = false;
+
+  const migratedNotes = notes.map((note) => {
+    const legacyIndex = findLegacySampleIndex(note);
+    if (legacyIndex === -1) return note;
+
+    const replacement = SAMPLE_NOTE_DATA[legacyIndex];
+    changed = true;
+
+    return {
+      ...note,
+      title: replacement.title,
+      body: replacement.body,
+      category: replacement.category,
+      tags: [...replacement.tags],
+      priority: replacement.priority,
+      pinned: replacement.pinned,
+      favorite: replacement.favorite
+    };
+  });
+
+  return { notes: migratedNotes, changed };
+}
+
+function findLegacySampleIndex(note) {
+  return LEGACY_SAMPLE_NOTES.findIndex((sample) => (
+    note.title === sample.title
+    && note.body === sample.body
+    && note.category === sample.category
+    && areTagsEqual(note.tags, sample.tags)
+  ));
+}
+
+function areTagsEqual(leftTags, rightTags) {
+  if (leftTags.length !== rightTags.length) return false;
+  return leftTags.every((tag, index) => tag === rightTags[index]);
 }
 
 function renderAll() {
@@ -435,7 +523,7 @@ function renderNotes() {
   dom.notesGrid.innerHTML = visibleNotes.map(renderNoteCard).join("");
 }
 
-function renderNoteCard(note) {
+function renderNoteCard(note, index) {
   const selectedClass = note.id === state.selectedId ? " is-selected" : "";
   const pinnedClass = note.pinned ? " is-pinned" : "";
   const favoriteClass = note.favorite ? " is-favorite" : "";
@@ -447,7 +535,7 @@ function renderNoteCard(note) {
   const priorityClass = getPriorityClass(note.priority);
 
   return `
-    <article class="note-card${selectedClass}${pinnedClass}${favoriteClass}" data-note-id="${escapeHtml(note.id)}">
+    <article class="note-card${selectedClass}${pinnedClass}${favoriteClass}" style="--card-index: ${Math.min(index, 10)}" data-note-id="${escapeHtml(note.id)}">
       <div class="card-top">
         <div class="card-badges">
           <span class="badge">${escapeHtml(note.category)}</span>
@@ -499,6 +587,7 @@ function renderEditor() {
     dom.saveState.textContent = "Ready";
     dom.titleInput.value = "";
     dom.bodyInput.value = "";
+    renderCategorySelect("その他");
     dom.categorySelect.value = "その他";
     dom.prioritySelect.value = "中";
     dom.tagsInput.value = "";
@@ -514,6 +603,7 @@ function renderEditor() {
   dom.saveState.textContent = "Saved";
   dom.titleInput.value = note.title;
   dom.bodyInput.value = note.body;
+  renderCategorySelect(note.category);
   dom.categorySelect.value = note.category;
   dom.prioritySelect.value = note.priority;
   dom.tagsInput.value = note.tags.join(", ");
@@ -602,7 +692,7 @@ function createNote(template = NOTE_TEMPLATES[0]) {
   openEditor();
   saveNotes(false);
   renderAll();
-  dom.titleInput.focus();
+  focusTitleAfterCreate();
   showToast(`${template.name}から作成しました`);
   resetEditorScrollOnSmallScreen();
 }
@@ -662,7 +752,7 @@ function flushAutoSave(showMessage) {
 function applyFormToNote(note, touchUpdatedAt) {
   note.title = dom.titleInput.value;
   note.body = dom.bodyInput.value;
-  note.category = EDIT_CATEGORIES.includes(dom.categorySelect.value) ? dom.categorySelect.value : "その他";
+  note.category = normalizeCategory(dom.categorySelect.value);
   note.tags = parseTags(dom.tagsInput.value);
   note.priority = PRIORITIES.includes(dom.prioritySelect.value) ? dom.prioritySelect.value : "中";
   note.pinned = dom.pinnedInput.checked;
@@ -882,7 +972,7 @@ function normalizeImportedNotes(input) {
   return rawNotes.map((raw) => {
     const now = new Date().toISOString();
     const id = makeUniqueId(String(raw?.id || createId()), usedIds);
-    const category = EDIT_CATEGORIES.includes(raw?.category) ? raw.category : "その他";
+    const category = normalizeCategory(raw?.category);
     const priority = PRIORITIES.includes(raw?.priority) ? raw.priority : "中";
 
     return {
@@ -947,6 +1037,11 @@ function normalizeTags(value) {
   return parseTags(toStringValue(value));
 }
 
+function normalizeCategory(value) {
+  const category = toStringValue(value).trim();
+  return category && category !== "全部" ? category : "その他";
+}
+
 function parseTags(value) {
   return uniqueTags(value.split(/[,，]/).map((tag) => tag.trim()).filter(Boolean));
 }
@@ -1006,10 +1101,24 @@ function showToast(message) {
   }, 1700);
 }
 
+function focusTitleAfterCreate() {
+  if (isSmallScreen()) {
+    requestAnimationFrame(scrollEditorFormToTop);
+    return;
+  }
+
+  dom.titleInput.focus();
+}
+
 function resetEditorScrollOnSmallScreen() {
   if (isSmallScreen()) {
-    dom.editorPanel.scrollTop = 0;
+    requestAnimationFrame(scrollEditorFormToTop);
   }
+}
+
+function scrollEditorFormToTop() {
+  dom.editorPanel.scrollTop = 0;
+  dom.noteForm.scrollTop = 0;
 }
 
 function isSmallScreen() {

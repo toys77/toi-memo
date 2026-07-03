@@ -31,23 +31,23 @@
         <h1>TOI MEMO</h1>
       </div>
 
+      <label class="global-search" for="searchInput">
+        <span class="search-mark" aria-hidden="true">⌕</span>
+        <input id="searchInput" class="search-input" type="search" placeholder="タイトル・本文・タグ・カテゴリを検索">
+      </label>
+
       <div class="header-actions" aria-label="アプリ操作">
         <button class="ghost-button" id="themeToggle" type="button">Light</button>
         <button class="ghost-button" id="settingsButton" type="button">設定</button>
         <button class="ghost-button" id="exportButton" type="button">Export</button>
-        <label class="ghost-button import-label" for="importInput">
-          Import
-          <input id="importInput" type="file" accept="application/json,.json">
-        </label>
+        <label class="ghost-button import-label" for="importInput">Import</label>
+        <input id="importInput" class="file-input" type="file" accept="application/json,.json">
       </div>
     </header>
 
     <main class="workspace">
       <aside class="control-panel" aria-label="メモ操作">
         <button class="primary-button" id="newNoteButton" type="button">新規メモ</button>
-
-        <label class="field-label" for="searchInput">検索</label>
-        <input id="searchInput" class="text-input" type="search" placeholder="タイトル・本文・タグ・カテゴリ">
 
         <label class="field-label" for="sortSelect">並び替え</label>
         <select id="sortSelect" class="select-input">
@@ -72,6 +72,11 @@
           </div>
           <span class="note-count" id="noteCount">0件</span>
         </div>
+
+        <button class="quick-create-button" id="quickCreateButton" type="button">
+          <span class="quick-create-plus" aria-hidden="true">＋</span>
+          <span>メモを入力...</span>
+        </button>
 
         <div class="notes-grid" id="notesGrid"></div>
 
@@ -99,8 +104,8 @@
               </div>
               <div class="editor-tools">
                 <span class="save-state" id="saveState">Ready</span>
-                <button class="keyboard-dismiss-button" id="keyboardDismissButton" type="button" aria-label="キーボードを閉じる">完了</button>
-                <button class="icon-button editor-close-button" id="closeEditorButton" type="button" aria-label="エディタを閉じる">×</button>
+                <button class="keyboard-dismiss-button" id="keyboardDismissButton" type="button" aria-label="入力を閉じる">入力を閉じる</button>
+                <button class="icon-button editor-close-button" id="closeEditorButton" type="button" aria-label="編集を閉じる" title="編集を閉じる">×</button>
               </div>
             </div>
           </div>
@@ -188,6 +193,7 @@
         </div>
 
         <button class="primary-button" id="settingsExportButton" type="button">JSONでバックアップ</button>
+        <label class="ghost-button settings-import-button" for="importInput">JSONを読み込む</label>
       </div>
     </section>
   </div>
