@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "toi-memo-cache-v1.7.0";
+const CACHE_NAME = "toi-memo-cache-v1.9.0";
 const APP_SHELL = [
   "./",
   "./index.html",

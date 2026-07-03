@@ -1,19 +1,38 @@
 "use strict";
 
-const APP_VERSION = "1.7.0";
+const APP_VERSION = "1.9.0";
 const BACKUP_RECOMMEND_DAYS = 7;
 
 const STORAGE_KEYS = {
   notes: "toiMemo.notes",
   theme: "toiMemo.theme",
   seeded: "toiMemo.seeded",
-  lastExportAt: "toiMemo.lastExportAt"
+  lastExportAt: "toiMemo.lastExportAt",
+  categories: "toiMemo.categories",
+  sortMode: "toiMemo.sortMode",
+  viewMode: "toiMemo.viewMode",
+  colorFilter: "toiMemo.colorFilter",
+  favoriteOnly: "toiMemo.favoriteOnly",
+  pinnedOnly: "toiMemo.pinnedOnly"
 };
 
-const CATEGORIES = ["全部", "アイデア", "就活", "授業", "料理", "サッカー", "ゲーム", "日記", "その他"];
-const EDIT_CATEGORIES = CATEGORIES.filter((category) => category !== "全部");
+const DEFAULT_CATEGORIES = ["全部", "アイデア", "就活", "授業", "料理", "サッカー", "ゲーム", "日記", "その他"];
+const PROTECTED_CATEGORIES = ["全部", "その他"];
 const PRIORITIES = ["低", "中", "高"];
 const PRIORITY_SCORE = { "高": 3, "中": 2, "低": 1 };
+const SORT_MODES = ["pinned", "updated", "created", "priority", "favorite"];
+const VIEW_MODES = ["card", "list", "compact"];
+const LONG_PRESS_MS = 460;
+
+const NOTE_COLORS = [
+  { id: "default", label: "デフォルト", swatch: "#2a2a2f" },
+  { id: "blue-gray", label: "ブルーグレー", swatch: "#26313a" },
+  { id: "dark-green", label: "ダークグリーン", swatch: "#1f342d" },
+  { id: "deep-blue", label: "ディープブルー", swatch: "#202d48" },
+  { id: "bordeaux", label: "ボルドー", swatch: "#41252e" },
+  { id: "brown", label: "ブラウン", swatch: "#3a2d24" },
+  { id: "purple-gray", label: "パープルグレー", swatch: "#332c40" }
+];
 
 // 新規作成時のテンプレートです。ここに追加すると選択画面にも反映されます。
 const NOTE_TEMPLATES = [
@@ -211,10 +230,20 @@ const LEGACY_SAMPLE_NOTES = [
 
 const state = {
   notes: [],
+  categories: [...DEFAULT_CATEGORIES],
   selectedId: null,
   activeCategory: "全部",
   searchQuery: "",
   sortMode: "pinned",
+  viewMode: "card",
+  colorFilter: "all",
+  favoriteOnly: false,
+  pinnedOnly: false,
+  categoryModalMode: "add",
+  editingCategoryName: "",
+  categoryMenuTarget: "",
+  categoryLongPressTimer: null,
+  suppressCategoryClick: false,
   isEditorOpen: true,
   sheetTouchStartY: 0,
   sheetTouchStartX: 0,
@@ -235,10 +264,17 @@ window.addEventListener("load", registerServiceWorker);
 // 起動時にDOM取得、保存データ読み込み、初回サンプル投入をまとめて行います。
 function init() {
   cacheDom();
+  loadCategories();
   setupCategoryOptions();
   bindEvents();
   applyTheme(loadTheme());
+  applySortMode(loadSortMode());
+  applyViewMode(loadViewMode());
+  applyColorFilter(loadColorFilter());
+  applyBooleanFilter("favoriteOnly", loadBooleanFilter(STORAGE_KEYS.favoriteOnly));
+  applyBooleanFilter("pinnedOnly", loadBooleanFilter(STORAGE_KEYS.pinnedOnly));
   loadNotes();
+  syncCategoriesFromNotes();
   state.isEditorOpen = !isSmallScreen();
   renderCategoryFilters();
   selectInitialNote();
@@ -256,9 +292,19 @@ function cacheDom() {
   dom.quickCreateButton = document.getElementById("quickCreateButton");
   dom.searchInput = document.getElementById("searchInput");
   dom.sortSelect = document.getElementById("sortSelect");
+  dom.viewModeControls = document.getElementById("viewModeControls");
+  dom.addCategoryButton = document.getElementById("addCategoryButton");
+  dom.colorFilterList = document.getElementById("colorFilterList");
+  dom.favoriteOnlyButton = document.getElementById("favoriteOnlyButton");
+  dom.pinnedOnlyButton = document.getElementById("pinnedOnlyButton");
+  dom.clearFiltersButton = document.getElementById("clearFiltersButton");
+  dom.notesClearFiltersButton = document.getElementById("notesClearFiltersButton");
   dom.categoryFilters = document.getElementById("categoryFilters");
   dom.notesGrid = document.getElementById("notesGrid");
   dom.emptyState = document.getElementById("emptyState");
+  dom.emptyTitle = document.getElementById("emptyTitle");
+  dom.emptyMessage = document.getElementById("emptyMessage");
+  dom.emptyClearFiltersButton = document.getElementById("emptyClearFiltersButton");
   dom.noteCount = document.getElementById("noteCount");
   dom.editorOverlay = document.getElementById("editorOverlay");
   dom.editorPanel = document.getElementById("editorPanel");
@@ -274,6 +320,7 @@ function cacheDom() {
   dom.categorySelect = document.getElementById("categorySelect");
   dom.prioritySelect = document.getElementById("prioritySelect");
   dom.tagsInput = document.getElementById("tagsInput");
+  dom.colorPalette = document.getElementById("colorPalette");
   dom.pinnedInput = document.getElementById("pinnedInput");
   dom.favoriteInput = document.getElementById("favoriteInput");
   dom.createdAtText = document.getElementById("createdAtText");
@@ -288,6 +335,19 @@ function cacheDom() {
   dom.settingsNoteCount = document.getElementById("settingsNoteCount");
   dom.settingsLastBackup = document.getElementById("settingsLastBackup");
   dom.backupAdvice = document.getElementById("backupAdvice");
+  dom.categoryModal = document.getElementById("categoryModal");
+  dom.categoryBackdrop = document.getElementById("categoryBackdrop");
+  dom.categoryModalTitle = document.getElementById("categoryModalTitle");
+  dom.categoryNameInput = document.getElementById("categoryNameInput");
+  dom.categorySaveButton = document.getElementById("categorySaveButton");
+  dom.categoryCancelButton = document.getElementById("categoryCancelButton");
+  dom.categoryCloseButton = document.getElementById("categoryCloseButton");
+  dom.categoryMenu = document.getElementById("categoryMenu");
+  dom.categoryMenuBackdrop = document.getElementById("categoryMenuBackdrop");
+  dom.categoryMenuTitle = document.getElementById("categoryMenuTitle");
+  dom.categoryMenuEditButton = document.getElementById("categoryMenuEditButton");
+  dom.categoryMenuDeleteButton = document.getElementById("categoryMenuDeleteButton");
+  dom.categoryMenuCancelButton = document.getElementById("categoryMenuCancelButton");
   dom.templateModal = document.getElementById("templateModal");
   dom.templateBackdrop = document.getElementById("templateBackdrop");
   dom.templatePanel = document.getElementById("templatePanel");
@@ -306,7 +366,7 @@ function setupCategoryOptions() {
 
 function renderCategorySelect(selectedCategory = "その他") {
   const currentCategory = toStringValue(selectedCategory).trim();
-  const categories = [...EDIT_CATEGORIES];
+  const categories = [...getEditableCategories()];
 
   if (currentCategory && currentCategory !== "全部" && !categories.includes(currentCategory)) {
     categories.push(currentCategory);
@@ -332,17 +392,26 @@ function bindEvents() {
   });
 
   dom.sortSelect.addEventListener("change", () => {
-    state.sortMode = dom.sortSelect.value;
+    applySortMode(dom.sortSelect.value);
+    localStorage.setItem(STORAGE_KEYS.sortMode, state.sortMode);
     renderNotes();
   });
 
-  dom.categoryFilters.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-category]");
-    if (!button) return;
-    state.activeCategory = button.dataset.category;
-    renderCategoryFilters();
-    renderNotes();
-  });
+  dom.viewModeControls.addEventListener("click", handleViewModeClick);
+  dom.colorFilterList.addEventListener("click", handleColorFilterClick);
+  dom.favoriteOnlyButton.addEventListener("click", () => toggleBooleanFilter("favoriteOnly", STORAGE_KEYS.favoriteOnly));
+  dom.pinnedOnlyButton.addEventListener("click", () => toggleBooleanFilter("pinnedOnly", STORAGE_KEYS.pinnedOnly));
+  dom.clearFiltersButton.addEventListener("click", resetFilters);
+  dom.notesClearFiltersButton.addEventListener("click", resetFilters);
+  dom.emptyClearFiltersButton.addEventListener("click", resetFilters);
+
+  dom.addCategoryButton.addEventListener("click", () => openCategoryModal("add"));
+  dom.categoryFilters.addEventListener("click", handleCategoryClick);
+  dom.categoryFilters.addEventListener("pointerdown", handleCategoryPointerDown);
+  dom.categoryFilters.addEventListener("pointerup", clearCategoryLongPress);
+  dom.categoryFilters.addEventListener("pointercancel", clearCategoryLongPress);
+  dom.categoryFilters.addEventListener("pointerleave", clearCategoryLongPress);
+  dom.categoryFilters.addEventListener("contextmenu", handleCategoryContextMenu);
 
   dom.notesGrid.addEventListener("click", (event) => {
     const actionButton = event.target.closest("[data-action]");
@@ -360,6 +429,7 @@ function bindEvents() {
   dom.noteForm.addEventListener("submit", (event) => event.preventDefault());
   dom.noteForm.addEventListener("click", handleEditorBlankTap);
   dom.editorOverlay.addEventListener("click", closeEditor);
+  dom.colorPalette.addEventListener("click", handleColorSelect);
   dom.keyboardDismissButton.addEventListener("pointerdown", dismissKeyboard);
   dom.keyboardDismissButton.addEventListener("click", dismissKeyboard);
   dom.closeEditorButton.addEventListener("click", closeEditor);
@@ -367,6 +437,20 @@ function bindEvents() {
   dom.settingsBackdrop.addEventListener("click", closeSettings);
   dom.settingsCloseButton.addEventListener("click", closeSettings);
   dom.settingsExportButton.addEventListener("click", exportNotes);
+  dom.categoryBackdrop.addEventListener("click", closeCategoryModal);
+  dom.categoryCloseButton.addEventListener("click", closeCategoryModal);
+  dom.categoryCancelButton.addEventListener("click", closeCategoryModal);
+  dom.categorySaveButton.addEventListener("click", saveCategoryFromModal);
+  dom.categoryNameInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      saveCategoryFromModal();
+    }
+  });
+  dom.categoryMenuBackdrop.addEventListener("click", closeCategoryMenu);
+  dom.categoryMenuCancelButton.addEventListener("click", closeCategoryMenu);
+  dom.categoryMenuEditButton.addEventListener("click", editCategoryFromMenu);
+  dom.categoryMenuDeleteButton.addEventListener("click", deleteCategoryFromMenu);
   dom.templateBackdrop.addEventListener("click", closeTemplatePicker);
   dom.templateCloseButton.addEventListener("click", closeTemplatePicker);
   dom.templateCancelButton.addEventListener("click", closeTemplatePicker);
@@ -379,6 +463,16 @@ function bindEvents() {
 
     if (!dom.templateModal.hidden) {
       closeTemplatePicker();
+      return;
+    }
+
+    if (!dom.categoryMenu.hidden) {
+      closeCategoryMenu();
+      return;
+    }
+
+    if (!dom.categoryModal.hidden) {
+      closeCategoryModal();
       return;
     }
 
@@ -447,6 +541,66 @@ function saveNotes(showMessage = true) {
   }
 }
 
+function loadCategories() {
+  const stored = localStorage.getItem(STORAGE_KEYS.categories);
+
+  if (stored) {
+    try {
+      state.categories = normalizeCategories(JSON.parse(stored), false);
+      saveCategories();
+      return;
+    } catch (error) {
+      console.warn("TOI MEMO: カテゴリを読み込めませんでした。", error);
+    }
+  }
+
+  state.categories = normalizeCategories(DEFAULT_CATEGORIES, true);
+  saveCategories();
+}
+
+function saveCategories() {
+  localStorage.setItem(STORAGE_KEYS.categories, JSON.stringify(state.categories));
+}
+
+function normalizeCategories(input, useDefaultsWhenEmpty = true) {
+  const source = Array.isArray(input) && input.length > 0
+    ? input
+    : useDefaultsWhenEmpty
+      ? DEFAULT_CATEGORIES
+      : ["全部", "その他"];
+
+  const normalized = uniqueCategoryNames(source.map(toStringValue));
+
+  if (!normalized.includes("全部")) {
+    normalized.unshift("全部");
+  }
+
+  if (!normalized.includes("その他")) {
+    normalized.push("その他");
+  }
+
+  return [
+    "全部",
+    ...normalized.filter((category) => category !== "全部" && category !== "その他"),
+    "その他"
+  ];
+}
+
+function syncCategoriesFromNotes() {
+  let changed = false;
+
+  state.notes.forEach((note) => {
+    const category = normalizeCategory(note.category);
+    if (category === "全部" || state.categories.includes(category)) return;
+    insertCategoryBeforeOther(category);
+    changed = true;
+  });
+
+  if (changed) {
+    saveCategories();
+  }
+}
+
 // サンプルはここを書き換えるだけで差し替えられます。
 function createSampleNotes() {
   const now = Date.now();
@@ -459,6 +613,7 @@ function createSampleNotes() {
     priority: note.priority,
     pinned: note.pinned,
     favorite: note.favorite,
+    color: "default",
     createdAt: new Date(now - index * 1000 * 60 * 60).toISOString(),
     updatedAt: new Date(now - index * 1000 * 60 * 30).toISOString()
   }));
@@ -509,24 +664,312 @@ function renderAll() {
   renderSettings();
 }
 
-function renderCategoryFilters() {
-  dom.categoryFilters.innerHTML = CATEGORIES.map((category) => {
-    const activeClass = category === state.activeCategory ? " is-active" : "";
-    return `<button class="category-button${activeClass}" type="button" data-category="${escapeHtml(category)}">${escapeHtml(category)}</button>`;
+function renderFilterControls() {
+  dom.viewModeControls.querySelectorAll("[data-view-mode]").forEach((button) => {
+    const isActive = button.dataset.viewMode === state.viewMode;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+
+  dom.favoriteOnlyButton.classList.toggle("is-active", state.favoriteOnly);
+  dom.favoriteOnlyButton.setAttribute("aria-pressed", String(state.favoriteOnly));
+  dom.pinnedOnlyButton.classList.toggle("is-active", state.pinnedOnly);
+  dom.pinnedOnlyButton.setAttribute("aria-pressed", String(state.pinnedOnly));
+  dom.clearFiltersButton.classList.toggle("is-active", hasActiveFilters());
+
+  const colorButtons = [
+    { id: "all", label: "すべての色", swatch: "" },
+    ...NOTE_COLORS
+  ];
+
+  dom.colorFilterList.innerHTML = colorButtons.map((color) => {
+    const activeClass = color.id === state.colorFilter ? " is-active" : "";
+    const allClass = color.id === "all" ? " is-all" : "";
+    const style = color.swatch ? ` style="--swatch-color: ${escapeHtml(color.swatch)}"` : "";
+
+    return `<button class="color-filter-chip${allClass}${activeClass}" type="button" data-color-filter="${escapeHtml(color.id)}"${style} aria-label="${escapeHtml(color.label)}" aria-pressed="${color.id === state.colorFilter}"></button>`;
   }).join("");
 }
 
+function renderCategoryFilters() {
+  dom.categoryFilters.innerHTML = state.categories.map((category) => {
+    const activeClass = category === state.activeCategory ? " is-active" : "";
+    const manageable = canManageCategory(category);
+    const menuButton = manageable
+      ? `<button class="category-menu-button" type="button" data-category-menu="${escapeHtml(category)}" aria-label="${escapeHtml(category)}の操作">…</button>`
+      : "";
+
+    return `
+      <div class="category-item${activeClass}" data-category-row="${escapeHtml(category)}">
+        <button class="category-button${activeClass}" type="button" data-category="${escapeHtml(category)}">${escapeHtml(category)}</button>
+        ${menuButton}
+      </div>
+    `;
+  }).join("");
+}
+
+function handleCategoryClick(event) {
+  const menuButton = event.target.closest("[data-category-menu]");
+  if (menuButton) {
+    openCategoryMenu(menuButton.dataset.categoryMenu);
+    return;
+  }
+
+  const button = event.target.closest("[data-category]");
+  if (!button) return;
+
+  if (state.suppressCategoryClick) {
+    state.suppressCategoryClick = false;
+    return;
+  }
+
+  state.activeCategory = button.dataset.category;
+  renderCategoryFilters();
+  renderNotes();
+}
+
+function handleViewModeClick(event) {
+  const button = event.target.closest("[data-view-mode]");
+  if (!button) return;
+
+  applyViewMode(button.dataset.viewMode);
+  localStorage.setItem(STORAGE_KEYS.viewMode, state.viewMode);
+  renderNotes();
+}
+
+function handleColorFilterClick(event) {
+  const button = event.target.closest("[data-color-filter]");
+  if (!button) return;
+
+  applyColorFilter(button.dataset.colorFilter);
+  localStorage.setItem(STORAGE_KEYS.colorFilter, state.colorFilter);
+  renderNotes();
+}
+
+function toggleBooleanFilter(key, storageKey) {
+  applyBooleanFilter(key, !state[key]);
+  localStorage.setItem(storageKey, String(state[key]));
+  renderNotes();
+}
+
+function resetFilters() {
+  state.searchQuery = "";
+  dom.searchInput.value = "";
+  state.activeCategory = "全部";
+  applyColorFilter("all");
+  applyBooleanFilter("favoriteOnly", false);
+  applyBooleanFilter("pinnedOnly", false);
+  localStorage.setItem(STORAGE_KEYS.colorFilter, state.colorFilter);
+  localStorage.setItem(STORAGE_KEYS.favoriteOnly, String(state.favoriteOnly));
+  localStorage.setItem(STORAGE_KEYS.pinnedOnly, String(state.pinnedOnly));
+  renderCategoryFilters();
+  renderNotes();
+}
+
+function handleCategoryPointerDown(event) {
+  const button = event.target.closest("[data-category]");
+  if (!button || event.target.closest("[data-category-menu]")) return;
+
+  const category = button.dataset.category;
+  if (!canManageCategory(category)) return;
+
+  clearCategoryLongPress();
+  state.categoryLongPressTimer = setTimeout(() => {
+    state.suppressCategoryClick = true;
+    openCategoryMenu(category);
+    setTimeout(() => {
+      state.suppressCategoryClick = false;
+    }, 700);
+  }, LONG_PRESS_MS);
+}
+
+function handleCategoryContextMenu(event) {
+  const button = event.target.closest("[data-category]");
+  if (!button) return;
+
+  const category = button.dataset.category;
+  if (!canManageCategory(category)) return;
+
+  event.preventDefault();
+  openCategoryMenu(category);
+}
+
+function clearCategoryLongPress() {
+  clearTimeout(state.categoryLongPressTimer);
+  state.categoryLongPressTimer = null;
+}
+
+function openCategoryMenu(category) {
+  if (!canManageCategory(category)) return;
+
+  clearCategoryLongPress();
+  state.categoryMenuTarget = category;
+  dom.categoryMenuTitle.textContent = category;
+  dom.categoryMenu.hidden = false;
+  dom.categoryMenuEditButton.focus();
+}
+
+function closeCategoryMenu() {
+  dom.categoryMenu.hidden = true;
+  state.categoryMenuTarget = "";
+}
+
+function editCategoryFromMenu() {
+  const category = state.categoryMenuTarget;
+  closeCategoryMenu();
+  openCategoryModal("edit", category);
+}
+
+function deleteCategoryFromMenu() {
+  const category = state.categoryMenuTarget;
+  closeCategoryMenu();
+  deleteCategory(category);
+}
+
+function openCategoryModal(mode, categoryName = "") {
+  state.categoryModalMode = mode;
+  state.editingCategoryName = categoryName;
+  dom.categoryModalTitle.textContent = mode === "edit" ? "カテゴリ編集" : "カテゴリ追加";
+  dom.categoryNameInput.value = categoryName;
+  dom.categoryModal.hidden = false;
+  dom.categoryNameInput.focus();
+  dom.categoryNameInput.select();
+}
+
+function closeCategoryModal() {
+  dom.categoryModal.hidden = true;
+  state.categoryModalMode = "add";
+  state.editingCategoryName = "";
+}
+
+function saveCategoryFromModal() {
+  flushAutoSave(false);
+  const name = normalizeCategoryName(dom.categoryNameInput.value);
+  const oldName = state.editingCategoryName;
+
+  if (!name) {
+    showToast("カテゴリ名を入力してください");
+    return;
+  }
+
+  if (name === "全部") {
+    showToast("「全部」は特別カテゴリです");
+    return;
+  }
+
+  if (!isCategoryNameAvailable(name, oldName)) {
+    showToast("同じカテゴリがすでにあります");
+    return;
+  }
+
+  if (state.categoryModalMode === "edit") {
+    renameCategory(oldName, name);
+  } else {
+    addCategory(name);
+  }
+
+  closeCategoryModal();
+}
+
+function addCategory(name) {
+  insertCategoryBeforeOther(name);
+  state.activeCategory = name;
+  saveCategories();
+  renderCategoryFilters();
+  renderAll();
+  showToast("カテゴリを追加しました");
+}
+
+function renameCategory(oldName, newName) {
+  if (!canManageCategory(oldName)) return;
+
+  if (oldName === newName) {
+    renderCategoryFilters();
+    renderAll();
+    return;
+  }
+
+  state.categories = state.categories.map((category) => category === oldName ? newName : category);
+  state.notes.forEach((note) => {
+    if (note.category === oldName) {
+      note.category = newName;
+      note.updatedAt = new Date().toISOString();
+    }
+  });
+
+  if (state.activeCategory === oldName) {
+    state.activeCategory = newName;
+  }
+
+  saveCategories();
+  saveNotes(false);
+  renderCategoryFilters();
+  renderAll();
+  showToast("カテゴリ名を変更しました");
+}
+
+function deleteCategory(category) {
+  if (!canManageCategory(category)) return;
+  flushAutoSave(false);
+
+  const ok = window.confirm(`「${category}」を削除しますか？\nこのカテゴリのメモは「その他」に移動します。`);
+  if (!ok) return;
+
+  state.categories = state.categories.filter((item) => item !== category);
+  state.notes.forEach((note) => {
+    if (note.category === category) {
+      note.category = "その他";
+      note.updatedAt = new Date().toISOString();
+    }
+  });
+
+  if (state.activeCategory === category) {
+    state.activeCategory = "全部";
+  }
+
+  saveCategories();
+  saveNotes(false);
+  renderCategoryFilters();
+  renderAll();
+  showToast("カテゴリを削除しました");
+}
+
 function renderNotes() {
+  renderFilterControls();
   const visibleNotes = getVisibleNotes();
   dom.noteCount.textContent = `${visibleNotes.length}件`;
-  dom.emptyState.hidden = visibleNotes.length !== 0;
+  renderEmptyState(visibleNotes.length);
+  dom.notesGrid.classList.remove("is-card-view", "is-list-view", "is-compact-view");
+  dom.notesGrid.classList.add(`is-${state.viewMode}-view`);
   dom.notesGrid.innerHTML = visibleNotes.map(renderNoteCard).join("");
+}
+
+function renderEmptyState(visibleCount) {
+  const isEmpty = visibleCount === 0;
+  const hasNotes = state.notes.length > 0;
+  const filtered = hasActiveFilters();
+
+  dom.emptyState.hidden = !isEmpty;
+  dom.emptyClearFiltersButton.hidden = !filtered;
+  dom.notesClearFiltersButton.hidden = !filtered;
+
+  if (!isEmpty) return;
+
+  if (hasNotes && filtered) {
+    dom.emptyTitle.textContent = "条件に合うメモがありません";
+    dom.emptyMessage.textContent = "検索条件やフィルターを変更してください。";
+    return;
+  }
+
+  dom.emptyTitle.textContent = "メモがありません";
+  dom.emptyMessage.textContent = "思いついたことを、まず1つだけ残しておきましょう。";
 }
 
 function renderNoteCard(note, index) {
   const selectedClass = note.id === state.selectedId ? " is-selected" : "";
   const pinnedClass = note.pinned ? " is-pinned" : "";
   const favoriteClass = note.favorite ? " is-favorite" : "";
+  const colorClass = getNoteColorClass(note.color);
   const title = note.title.trim() || "無題メモ";
   const preview = note.body.trim() || "本文なし";
   const tags = note.tags.length
@@ -535,7 +978,7 @@ function renderNoteCard(note, index) {
   const priorityClass = getPriorityClass(note.priority);
 
   return `
-    <article class="note-card${selectedClass}${pinnedClass}${favoriteClass}" style="--card-index: ${Math.min(index, 10)}" data-note-id="${escapeHtml(note.id)}">
+    <article class="note-card ${colorClass}${selectedClass}${pinnedClass}${favoriteClass}" style="--card-index: ${Math.min(index, 10)}" data-note-id="${escapeHtml(note.id)}">
       <div class="card-top">
         <div class="card-badges">
           <span class="badge">${escapeHtml(note.category)}</span>
@@ -583,6 +1026,7 @@ function renderEditor() {
   });
 
   if (!note) {
+    applyNoteColorClass(dom.editorPanel, "default");
     dom.editorHeading.textContent = "メモを選択";
     dom.saveState.textContent = "Ready";
     dom.titleInput.value = "";
@@ -596,9 +1040,11 @@ function renderEditor() {
     dom.createdAtText.textContent = "-";
     dom.updatedAtText.textContent = "-";
     dom.charCount.textContent = "0文字";
+    renderColorPalette("default", true);
     return;
   }
 
+  applyNoteColorClass(dom.editorPanel, note.color);
   dom.editorHeading.textContent = note.title.trim() || "無題メモ";
   dom.saveState.textContent = "Saved";
   dom.titleInput.value = note.title;
@@ -609,6 +1055,7 @@ function renderEditor() {
   dom.tagsInput.value = note.tags.join(", ");
   dom.pinnedInput.checked = note.pinned;
   dom.favoriteInput.checked = note.favorite;
+  renderColorPalette(note.color, false);
   renderEditorMeta(note);
   updateCharCount();
 }
@@ -616,6 +1063,42 @@ function renderEditor() {
 function renderEditorMeta(note) {
   dom.createdAtText.textContent = formatDateTime(note.createdAt);
   dom.updatedAtText.textContent = formatDateTime(note.updatedAt);
+}
+
+function renderColorPalette(selectedColor, disabled) {
+  const safeColor = normalizeNoteColor(selectedColor);
+
+  dom.colorPalette.innerHTML = NOTE_COLORS.map((color) => {
+    const activeClass = color.id === safeColor ? " is-active" : "";
+    const disabledAttribute = disabled ? " disabled" : "";
+
+    return `
+      <button class="color-chip${activeClass}" type="button" data-color-id="${escapeHtml(color.id)}" style="--swatch-color: ${escapeHtml(color.swatch)}" aria-label="${escapeHtml(color.label)}"${disabledAttribute}>
+        <span aria-hidden="true"></span>
+      </button>
+    `;
+  }).join("");
+}
+
+function handleColorSelect(event) {
+  const button = event.target.closest("[data-color-id]");
+  if (!button) return;
+
+  const note = getSelectedNote();
+  if (!note) return;
+
+  note.color = normalizeNoteColor(button.dataset.colorId);
+  note.updatedAt = new Date().toISOString();
+  saveNotes(false);
+  renderAll();
+  showToast("メモカラーを変更しました");
+}
+
+function applyNoteColorClass(element, color) {
+  NOTE_COLORS.forEach((item) => {
+    element.classList.remove(getNoteColorClass(item.id));
+  });
+  element.classList.add(getNoteColorClass(color));
 }
 
 function selectInitialNote() {
@@ -678,11 +1161,12 @@ function createNote(template = NOTE_TEMPLATES[0]) {
     id: createId(),
     title: template.title,
     body: template.body,
-    category: EDIT_CATEGORIES.includes(template.category) ? template.category : "その他",
+    category: getEditableCategories().includes(template.category) ? template.category : "その他",
     tags: uniqueTags(template.tags),
     priority: "中",
     pinned: false,
     favorite: false,
+    color: "default",
     createdAt: now,
     updatedAt: now
   };
@@ -871,6 +1355,9 @@ function getVisibleNotes() {
   return [...state.notes]
     .filter((note) => {
       const matchesCategory = state.activeCategory === "全部" || note.category === state.activeCategory;
+      const matchesColor = state.colorFilter === "all" || normalizeNoteColor(note.color) === state.colorFilter;
+      const matchesFavorite = !state.favoriteOnly || note.favorite;
+      const matchesPinned = !state.pinnedOnly || note.pinned;
       const searchableText = [
         note.title,
         note.body,
@@ -878,7 +1365,11 @@ function getVisibleNotes() {
         note.tags.join(" ")
       ].join(" ").toLowerCase();
 
-      return matchesCategory && searchableText.includes(query);
+      return matchesCategory
+        && matchesColor
+        && matchesFavorite
+        && matchesPinned
+        && searchableText.includes(query);
     })
     .sort(sortNotes);
 }
@@ -911,9 +1402,10 @@ function exportNotes() {
   const exportedAt = new Date().toISOString();
   const payload = {
     app: "TOI MEMO",
-    version: 1,
+    version: 2,
     appVersion: APP_VERSION,
     exportedAt,
+    categories: state.categories,
     notes: state.notes
   };
   const json = JSON.stringify(payload, null, 2);
@@ -940,6 +1432,7 @@ function importNotes(event) {
     try {
       const parsed = JSON.parse(String(reader.result));
       const notes = normalizeImportedNotes(parsed);
+      const categories = normalizeImportedCategories(parsed, notes);
 
       if (notes.length === 0) {
         window.alert("取り込めるメモがありません。");
@@ -950,8 +1443,14 @@ function importNotes(event) {
       if (!ok) return;
 
       state.notes = notes;
+      state.categories = categories;
+      if (!state.categories.includes(state.activeCategory)) {
+        state.activeCategory = "全部";
+      }
       state.selectedId = getVisibleNotes()[0]?.id || state.notes[0]?.id || null;
+      saveCategories();
       saveNotes(false);
+      renderCategoryFilters();
       renderAll();
       showToast("JSONをインポートしました");
     } catch (error) {
@@ -984,10 +1483,27 @@ function normalizeImportedNotes(input) {
       priority,
       pinned: Boolean(raw?.pinned),
       favorite: Boolean(raw?.favorite),
+      color: normalizeNoteColor(raw?.color),
       createdAt: isValidDate(raw?.createdAt) ? raw.createdAt : now,
       updatedAt: isValidDate(raw?.updatedAt) ? raw.updatedAt : now
     };
   });
+}
+
+function normalizeImportedCategories(input, notes) {
+  const rawCategories = Array.isArray(input?.categories) ? input.categories : [];
+  const baseCategories = rawCategories.length > 0 ? rawCategories : DEFAULT_CATEGORIES;
+  const categories = normalizeCategories(baseCategories, true);
+
+  notes.forEach((note) => {
+    const category = normalizeCategory(note.category);
+    if (category !== "全部" && !categories.includes(category)) {
+      const otherIndex = categories.indexOf("その他");
+      categories.splice(otherIndex === -1 ? categories.length : otherIndex, 0, category);
+    }
+  });
+
+  return normalizeCategories(categories, true);
 }
 
 function openSettings() {
@@ -1042,6 +1558,59 @@ function normalizeCategory(value) {
   return category && category !== "全部" ? category : "その他";
 }
 
+function normalizeCategoryName(value) {
+  return toStringValue(value).trim();
+}
+
+function uniqueCategoryNames(categories) {
+  const seen = new Set();
+  const result = [];
+
+  categories.forEach((category) => {
+    const clean = normalizeCategoryName(category);
+    const key = clean.toLowerCase();
+    if (!clean || seen.has(key)) return;
+    seen.add(key);
+    result.push(clean);
+  });
+
+  return result;
+}
+
+function getEditableCategories() {
+  return state.categories.filter((category) => category !== "全部");
+}
+
+function canManageCategory(category) {
+  return state.categories.includes(category) && !PROTECTED_CATEGORIES.includes(category);
+}
+
+function isCategoryNameAvailable(name, exceptName = "") {
+  const normalizedName = name.toLowerCase();
+  const normalizedExcept = exceptName.toLowerCase();
+
+  return !state.categories.some((category) => (
+    category.toLowerCase() === normalizedName
+    && category.toLowerCase() !== normalizedExcept
+  ));
+}
+
+function insertCategoryBeforeOther(category) {
+  if (!category || state.categories.includes(category)) return;
+
+  const otherIndex = state.categories.indexOf("その他");
+  state.categories.splice(otherIndex === -1 ? state.categories.length : otherIndex, 0, category);
+}
+
+function normalizeNoteColor(value) {
+  const color = toStringValue(value).trim();
+  return NOTE_COLORS.some((item) => item.id === color) ? color : "default";
+}
+
+function getNoteColorClass(value) {
+  return `color-${normalizeNoteColor(value)}`;
+}
+
 function parseTags(value) {
   return uniqueTags(value.split(/[,，]/).map((tag) => tag.trim()).filter(Boolean));
 }
@@ -1075,6 +1644,51 @@ function applyTheme(theme) {
 
 function loadTheme() {
   return localStorage.getItem(STORAGE_KEYS.theme) || "dark";
+}
+
+function applySortMode(sortMode) {
+  const safeSortMode = SORT_MODES.includes(sortMode) ? sortMode : "pinned";
+  state.sortMode = safeSortMode;
+  dom.sortSelect.value = safeSortMode;
+}
+
+function loadSortMode() {
+  return localStorage.getItem(STORAGE_KEYS.sortMode) || "pinned";
+}
+
+function applyViewMode(viewMode) {
+  state.viewMode = VIEW_MODES.includes(viewMode) ? viewMode : "card";
+}
+
+function loadViewMode() {
+  return localStorage.getItem(STORAGE_KEYS.viewMode) || "card";
+}
+
+function applyColorFilter(colorFilter) {
+  const safeColor = colorFilter === "all" || NOTE_COLORS.some((color) => color.id === colorFilter)
+    ? colorFilter
+    : "all";
+  state.colorFilter = safeColor;
+}
+
+function loadColorFilter() {
+  return localStorage.getItem(STORAGE_KEYS.colorFilter) || "all";
+}
+
+function applyBooleanFilter(key, value) {
+  state[key] = Boolean(value);
+}
+
+function loadBooleanFilter(storageKey) {
+  return localStorage.getItem(storageKey) === "true";
+}
+
+function hasActiveFilters() {
+  return Boolean(state.searchQuery)
+    || state.activeCategory !== "全部"
+    || state.colorFilter !== "all"
+    || state.favoriteOnly
+    || state.pinnedOnly;
 }
 
 function getSelectedNote() {

@@ -58,8 +58,26 @@
           <option value="favorite">お気に入り優先</option>
         </select>
 
+        <div class="filter-block">
+          <div class="filter-title-row">
+            <p class="field-label">フィルター</p>
+            <button class="filter-clear-button" id="clearFiltersButton" type="button">解除</button>
+          </div>
+
+          <div class="filter-toggle-row">
+            <button class="filter-toggle-button" id="favoriteOnlyButton" type="button" aria-pressed="false">お気に入り</button>
+            <button class="filter-toggle-button" id="pinnedOnlyButton" type="button" aria-pressed="false">ピン留め</button>
+          </div>
+
+          <p class="field-label color-filter-label" id="colorFilterLabel">色</p>
+          <div class="color-filter-list" id="colorFilterList" role="group" aria-labelledby="colorFilterLabel"></div>
+        </div>
+
         <div class="category-block">
-          <p class="field-label">カテゴリ</p>
+          <div class="category-title-row">
+            <p class="field-label">カテゴリ</p>
+            <button class="category-add-button" id="addCategoryButton" type="button" aria-label="カテゴリを追加">＋</button>
+          </div>
           <div class="category-list" id="categoryFilters" aria-label="カテゴリフィルター"></div>
         </div>
       </aside>
@@ -73,6 +91,15 @@
           <span class="note-count" id="noteCount">0件</span>
         </div>
 
+        <div class="notes-toolbar" aria-label="表示とフィルター操作">
+          <div class="view-switcher" id="viewModeControls" role="group" aria-label="表示切り替え">
+            <button class="view-mode-button" type="button" data-view-mode="card">カード</button>
+            <button class="view-mode-button" type="button" data-view-mode="list">リスト</button>
+            <button class="view-mode-button" type="button" data-view-mode="compact">コンパクト</button>
+          </div>
+          <button class="ghost-button notes-clear-filters-button" id="notesClearFiltersButton" type="button">フィルター解除</button>
+        </div>
+
         <button class="quick-create-button" id="quickCreateButton" type="button">
           <span class="quick-create-plus" aria-hidden="true">＋</span>
           <span>メモを入力...</span>
@@ -81,8 +108,9 @@
         <div class="notes-grid" id="notesGrid"></div>
 
         <div class="empty-state" id="emptyState" hidden>
-          <p class="empty-title">メモがありません</p>
-          <p>思いついたことを、まず1つだけ残しておきましょう。</p>
+          <p class="empty-title" id="emptyTitle">メモがありません</p>
+          <p id="emptyMessage">思いついたことを、まず1つだけ残しておきましょう。</p>
+          <button class="ghost-button empty-clear-button" id="emptyClearFiltersButton" type="button" hidden>フィルター解除</button>
         </div>
       </section>
 
@@ -137,6 +165,11 @@
 
           <label class="field-label" for="tagsInput">タグ</label>
           <input id="tagsInput" class="text-input" type="text" placeholder="カンマ区切り 例: SIer, 面接, アイデア">
+
+          <div class="color-field">
+            <p class="field-label" id="colorPaletteLabel">メモカラー</p>
+            <div class="color-palette" id="colorPalette" role="group" aria-labelledby="colorPaletteLabel"></div>
+          </div>
 
           <div class="toggle-row">
             <label class="check-toggle">
@@ -195,6 +228,39 @@
         <button class="primary-button" id="settingsExportButton" type="button">JSONでバックアップ</button>
         <label class="ghost-button settings-import-button" for="importInput">JSONを読み込む</label>
       </div>
+    </section>
+  </div>
+
+  <div class="category-modal" id="categoryModal" hidden>
+    <div class="category-backdrop" id="categoryBackdrop"></div>
+    <section class="category-panel" role="dialog" aria-modal="true" aria-labelledby="categoryModalTitle">
+      <div class="category-modal-header">
+        <div>
+          <p class="section-kicker">Category</p>
+          <h2 id="categoryModalTitle">カテゴリ追加</h2>
+        </div>
+        <button class="icon-button category-close-button" id="categoryCloseButton" type="button" aria-label="カテゴリ画面を閉じる">×</button>
+      </div>
+
+      <div class="category-modal-body">
+        <label class="field-label" for="categoryNameInput">カテゴリ名</label>
+        <input id="categoryNameInput" class="text-input" type="text" maxlength="32" placeholder="例：旅行">
+        <div class="category-modal-actions">
+          <button class="ghost-button" id="categoryCancelButton" type="button">キャンセル</button>
+          <button class="primary-button" id="categorySaveButton" type="button">保存</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="category-menu" id="categoryMenu" hidden>
+    <div class="category-menu-backdrop" id="categoryMenuBackdrop"></div>
+    <section class="category-menu-panel" role="dialog" aria-modal="true" aria-labelledby="categoryMenuTitle">
+      <p class="section-kicker">Category actions</p>
+      <h2 id="categoryMenuTitle">カテゴリ</h2>
+      <button class="ghost-button" id="categoryMenuEditButton" type="button">編集</button>
+      <button class="danger-button" id="categoryMenuDeleteButton" type="button">削除</button>
+      <button class="ghost-button" id="categoryMenuCancelButton" type="button">キャンセル</button>
     </section>
   </div>
 
