@@ -91,6 +91,42 @@
           <span class="note-count" id="noteCount">0件</span>
         </div>
 
+        <button class="quick-create-button" id="quickCreateButton" type="button">
+          <span class="quick-create-plus" aria-hidden="true">＋</span>
+          <span>メモを作成</span>
+        </button>
+
+        <section class="dashboard-panel" id="dashboardPanel" aria-label="ホームダッシュボード">
+          <div class="dashboard-top">
+            <div>
+              <p class="section-kicker">Today</p>
+              <h3>ホーム</h3>
+            </div>
+            <div class="dashboard-controls">
+              <div class="dashboard-shortcuts" aria-label="ショートカット">
+                <button class="dashboard-shortcut-button" id="dashboardPinnedButton" type="button">ピン留め</button>
+                <button class="dashboard-shortcut-button" id="dashboardFavoriteButton" type="button">お気に入り</button>
+              </div>
+              <button class="dashboard-collapse-button" id="dashboardCollapseButton" type="button" aria-expanded="false">展開</button>
+            </div>
+          </div>
+          <div class="dashboard-stats" id="dashboardStats"></div>
+          <div class="recent-notes-section">
+            <div class="dashboard-section-heading">
+              <h4>最近更新したメモ</h4>
+              <span>最大3件</span>
+            </div>
+            <div class="recent-notes-list" id="recentNotesList"></div>
+          </div>
+          <div class="category-stats-section">
+            <div class="dashboard-section-heading">
+              <h4>カテゴリ別</h4>
+              <span id="categoryStatsTotal">0件</span>
+            </div>
+            <div class="category-stats-list" id="categoryStatsList"></div>
+          </div>
+        </section>
+
         <div class="notes-toolbar" aria-label="表示とフィルター操作">
           <div class="view-switcher" id="viewModeControls" role="group" aria-label="表示切り替え">
             <button class="view-mode-button" type="button" data-view-mode="card">カード</button>
@@ -99,11 +135,6 @@
           </div>
           <button class="ghost-button notes-clear-filters-button" id="notesClearFiltersButton" type="button">フィルター解除</button>
         </div>
-
-        <button class="quick-create-button" id="quickCreateButton" type="button">
-          <span class="quick-create-plus" aria-hidden="true">＋</span>
-          <span>メモを入力...</span>
-        </button>
 
         <div class="notes-grid" id="notesGrid"></div>
 
@@ -122,6 +153,52 @@
           <p>一覧からメモを選ぶか、新規メモを作成してください。</p>
         </div>
 
+        <section class="note-view-panel" id="noteViewPanel" hidden>
+          <div class="editor-sheet-header" id="viewSheetHeader">
+            <div class="editor-drag-handle" aria-hidden="true"></div>
+            <div class="panel-heading editor-heading">
+              <div>
+                <p class="section-kicker">Viewer</p>
+                <h2 id="viewHeading">メモを選択</h2>
+              </div>
+              <div class="editor-tools">
+                <span class="save-state">閲覧</span>
+                <button class="primary-button view-edit-button" id="viewEditButton" type="button">編集</button>
+                <button class="icon-button editor-close-button" id="viewCloseEditorButton" type="button" aria-label="編集を閉じる" title="編集を閉じる">×</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="view-content">
+            <div class="view-title-row">
+              <div>
+                <p class="view-category" id="viewCategory">その他</p>
+                <h3 id="viewTitle">無題メモ</h3>
+              </div>
+              <div class="view-status-row" id="viewStatusRow"></div>
+            </div>
+
+            <div class="view-action-row" id="viewActionRow" aria-label="メモ操作">
+              <button class="ghost-button" id="viewPinButton" type="button">ピン留め</button>
+              <button class="ghost-button" id="viewFavoriteButton" type="button">お気に入り</button>
+              <button class="danger-button" id="viewDeleteButton" type="button">削除</button>
+            </div>
+
+            <div class="view-color-field">
+              <p class="field-label" id="viewColorPaletteLabel">メモカラー</p>
+              <div class="color-palette view-color-palette" id="viewColorPalette" role="group" aria-labelledby="viewColorPaletteLabel"></div>
+            </div>
+
+            <div class="view-tags" id="viewTags"></div>
+            <div class="markdown-preview" id="viewBody"></div>
+
+            <div class="date-box view-date-box" aria-live="polite">
+              <p><span>作成</span><time id="viewCreatedAtText">-</time></p>
+              <p><span>更新</span><time id="viewUpdatedAtText">-</time></p>
+            </div>
+          </div>
+        </section>
+
         <form class="editor-form" id="noteForm">
           <div class="editor-sheet-header" id="editorSheetHeader">
             <div class="editor-drag-handle" aria-hidden="true"></div>
@@ -132,6 +209,7 @@
               </div>
               <div class="editor-tools">
                 <span class="save-state" id="saveState">Ready</span>
+                <button class="ghost-button back-to-view-button" id="backToViewButton" type="button">閲覧に戻る</button>
                 <button class="keyboard-dismiss-button" id="keyboardDismissButton" type="button" aria-label="入力を閉じる">入力を閉じる</button>
                 <button class="icon-button editor-close-button" id="closeEditorButton" type="button" aria-label="編集を閉じる" title="編集を閉じる">×</button>
               </div>
@@ -225,6 +303,14 @@
           大事なメモを守るため、そろそろエクスポートしておくと安心です。
         </div>
 
+        <label class="settings-toggle">
+          <span>
+            <strong>ダッシュボード</strong>
+            <small>メモ一覧上部にホーム情報を表示する</small>
+          </span>
+          <input id="showDashboardToggle" type="checkbox">
+        </label>
+
         <button class="primary-button" id="settingsExportButton" type="button">JSONでバックアップ</button>
         <label class="ghost-button settings-import-button" for="importInput">JSONを読み込む</label>
       </div>
@@ -284,7 +370,7 @@
   </div>
 
   <div class="update-banner" id="updateBanner" hidden role="status" aria-live="polite">
-    <p>新しいバージョンがあります。更新しますか？</p>
+    <p>新しいバージョンがあります。更新する</p>
     <div class="update-actions">
       <button class="ghost-button" id="updateReloadButton" type="button">更新する</button>
       <button class="ghost-button" id="updateDismissButton" type="button">後で</button>

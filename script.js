@@ -1,6 +1,6 @@
 "use strict";
 
-const APP_VERSION = "1.9.0";
+const APP_VERSION = "2.0.1";
 const BACKUP_RECOMMEND_DAYS = 7;
 
 const STORAGE_KEYS = {
@@ -13,7 +13,9 @@ const STORAGE_KEYS = {
   viewMode: "toiMemo.viewMode",
   colorFilter: "toiMemo.colorFilter",
   favoriteOnly: "toiMemo.favoriteOnly",
-  pinnedOnly: "toiMemo.pinnedOnly"
+  pinnedOnly: "toiMemo.pinnedOnly",
+  showDashboard: "toiMemo.showDashboard",
+  dashboardCollapsed: "toiMemo.dashboardCollapsed"
 };
 
 const DEFAULT_CATEGORIES = ["全部", "アイデア", "就活", "授業", "料理", "サッカー", "ゲーム", "日記", "その他"];
@@ -239,6 +241,9 @@ const state = {
   colorFilter: "all",
   favoriteOnly: false,
   pinnedOnly: false,
+  showDashboard: true,
+  dashboardCollapsed: true,
+  editorMode: "view",
   categoryModalMode: "add",
   editingCategoryName: "",
   categoryMenuTarget: "",
@@ -273,6 +278,8 @@ function init() {
   applyColorFilter(loadColorFilter());
   applyBooleanFilter("favoriteOnly", loadBooleanFilter(STORAGE_KEYS.favoriteOnly));
   applyBooleanFilter("pinnedOnly", loadBooleanFilter(STORAGE_KEYS.pinnedOnly));
+  applyShowDashboard(loadShowDashboard());
+  applyDashboardCollapsed(loadDashboardCollapsed());
   loadNotes();
   syncCategoriesFromNotes();
   state.isEditorOpen = !isSmallScreen();
@@ -301,6 +308,14 @@ function cacheDom() {
   dom.notesClearFiltersButton = document.getElementById("notesClearFiltersButton");
   dom.categoryFilters = document.getElementById("categoryFilters");
   dom.notesGrid = document.getElementById("notesGrid");
+  dom.dashboardPanel = document.getElementById("dashboardPanel");
+  dom.dashboardStats = document.getElementById("dashboardStats");
+  dom.dashboardPinnedButton = document.getElementById("dashboardPinnedButton");
+  dom.dashboardFavoriteButton = document.getElementById("dashboardFavoriteButton");
+  dom.dashboardCollapseButton = document.getElementById("dashboardCollapseButton");
+  dom.recentNotesList = document.getElementById("recentNotesList");
+  dom.categoryStatsTotal = document.getElementById("categoryStatsTotal");
+  dom.categoryStatsList = document.getElementById("categoryStatsList");
   dom.emptyState = document.getElementById("emptyState");
   dom.emptyTitle = document.getElementById("emptyTitle");
   dom.emptyMessage = document.getElementById("emptyMessage");
@@ -310,9 +325,27 @@ function cacheDom() {
   dom.editorPanel = document.getElementById("editorPanel");
   dom.editorSheetHeader = document.getElementById("editorSheetHeader");
   dom.editorClosedState = document.getElementById("editorClosedState");
+  dom.noteViewPanel = document.getElementById("noteViewPanel");
+  dom.viewSheetHeader = document.getElementById("viewSheetHeader");
+  dom.viewHeading = document.getElementById("viewHeading");
+  dom.viewEditButton = document.getElementById("viewEditButton");
+  dom.viewCloseEditorButton = document.getElementById("viewCloseEditorButton");
+  dom.viewTitle = document.getElementById("viewTitle");
+  dom.viewCategory = document.getElementById("viewCategory");
+  dom.viewStatusRow = document.getElementById("viewStatusRow");
+  dom.viewActionRow = document.getElementById("viewActionRow");
+  dom.viewPinButton = document.getElementById("viewPinButton");
+  dom.viewFavoriteButton = document.getElementById("viewFavoriteButton");
+  dom.viewDeleteButton = document.getElementById("viewDeleteButton");
+  dom.viewColorPalette = document.getElementById("viewColorPalette");
+  dom.viewTags = document.getElementById("viewTags");
+  dom.viewBody = document.getElementById("viewBody");
+  dom.viewCreatedAtText = document.getElementById("viewCreatedAtText");
+  dom.viewUpdatedAtText = document.getElementById("viewUpdatedAtText");
   dom.noteForm = document.getElementById("noteForm");
   dom.editorHeading = document.getElementById("editorHeading");
   dom.saveState = document.getElementById("saveState");
+  dom.backToViewButton = document.getElementById("backToViewButton");
   dom.keyboardDismissButton = document.getElementById("keyboardDismissButton");
   dom.closeEditorButton = document.getElementById("closeEditorButton");
   dom.titleInput = document.getElementById("titleInput");
@@ -335,6 +368,7 @@ function cacheDom() {
   dom.settingsNoteCount = document.getElementById("settingsNoteCount");
   dom.settingsLastBackup = document.getElementById("settingsLastBackup");
   dom.backupAdvice = document.getElementById("backupAdvice");
+  dom.showDashboardToggle = document.getElementById("showDashboardToggle");
   dom.categoryModal = document.getElementById("categoryModal");
   dom.categoryBackdrop = document.getElementById("categoryBackdrop");
   dom.categoryModalTitle = document.getElementById("categoryModalTitle");
@@ -404,6 +438,10 @@ function bindEvents() {
   dom.clearFiltersButton.addEventListener("click", resetFilters);
   dom.notesClearFiltersButton.addEventListener("click", resetFilters);
   dom.emptyClearFiltersButton.addEventListener("click", resetFilters);
+  dom.dashboardPinnedButton.addEventListener("click", () => applyDashboardShortcut("pinned"));
+  dom.dashboardFavoriteButton.addEventListener("click", () => applyDashboardShortcut("favorite"));
+  dom.dashboardCollapseButton.addEventListener("click", toggleDashboardCollapsed);
+  dom.recentNotesList.addEventListener("click", handleRecentNoteClick);
 
   dom.addCategoryButton.addEventListener("click", () => openCategoryModal("add"));
   dom.categoryFilters.addEventListener("click", handleCategoryClick);
@@ -428,8 +466,16 @@ function bindEvents() {
 
   dom.noteForm.addEventListener("submit", (event) => event.preventDefault());
   dom.noteForm.addEventListener("click", handleEditorBlankTap);
+  dom.viewEditButton.addEventListener("click", switchToEditMode);
+  dom.viewCloseEditorButton.addEventListener("click", closeEditor);
+  dom.viewPinButton.addEventListener("click", () => toggleSelectedFlag("pinned"));
+  dom.viewFavoriteButton.addEventListener("click", () => toggleSelectedFlag("favorite"));
+  dom.viewDeleteButton.addEventListener("click", deleteSelectedNote);
+  dom.viewColorPalette.addEventListener("click", handleColorSelect);
+  dom.viewBody.addEventListener("change", handlePreviewChecklistChange);
   dom.editorOverlay.addEventListener("click", closeEditor);
   dom.colorPalette.addEventListener("click", handleColorSelect);
+  dom.backToViewButton.addEventListener("click", switchToViewMode);
   dom.keyboardDismissButton.addEventListener("pointerdown", dismissKeyboard);
   dom.keyboardDismissButton.addEventListener("click", dismissKeyboard);
   dom.closeEditorButton.addEventListener("click", closeEditor);
@@ -437,6 +483,11 @@ function bindEvents() {
   dom.settingsBackdrop.addEventListener("click", closeSettings);
   dom.settingsCloseButton.addEventListener("click", closeSettings);
   dom.settingsExportButton.addEventListener("click", exportNotes);
+  dom.showDashboardToggle.addEventListener("change", () => {
+    applyShowDashboard(dom.showDashboardToggle.checked);
+    localStorage.setItem(STORAGE_KEYS.showDashboard, String(state.showDashboard));
+    renderAll();
+  });
   dom.categoryBackdrop.addEventListener("click", closeCategoryModal);
   dom.categoryCloseButton.addEventListener("click", closeCategoryModal);
   dom.categoryCancelButton.addEventListener("click", closeCategoryModal);
@@ -484,6 +535,10 @@ function bindEvents() {
   dom.editorSheetHeader.addEventListener("touchmove", handleSheetTouchMove, { passive: false });
   dom.editorSheetHeader.addEventListener("touchend", handleSheetTouchEnd);
   dom.editorSheetHeader.addEventListener("touchcancel", cancelSheetDrag);
+  dom.viewSheetHeader.addEventListener("touchstart", handleSheetTouchStart, { passive: true });
+  dom.viewSheetHeader.addEventListener("touchmove", handleSheetTouchMove, { passive: false });
+  dom.viewSheetHeader.addEventListener("touchend", handleSheetTouchEnd);
+  dom.viewSheetHeader.addEventListener("touchcancel", cancelSheetDrag);
 
   const autoSaveTargets = [
     dom.titleInput,
@@ -659,9 +714,110 @@ function areTagsEqual(leftTags, rightTags) {
 }
 
 function renderAll() {
+  renderDashboard();
   renderNotes();
   renderEditor();
   renderSettings();
+}
+
+function renderDashboard() {
+  if (!dom.dashboardPanel) return;
+
+  dom.dashboardPanel.hidden = !state.showDashboard;
+  if (!state.showDashboard) return;
+
+  const stats = getDashboardStats();
+  const fullStatItems = [
+    { label: "総メモ数", value: stats.total },
+    { label: "今日作成", value: stats.createdToday },
+    { label: "7日以内更新", value: stats.recentlyUpdated },
+    { label: "ピン留め", value: stats.pinned },
+    { label: "お気に入り", value: stats.favorite }
+  ];
+  const collapsedStatItems = [
+    { label: "メモ", value: stats.total },
+    { label: "今日", value: stats.createdToday },
+    { label: "ピン", value: stats.pinned },
+    { label: "お気に入り", value: stats.favorite }
+  ];
+  const statItems = state.dashboardCollapsed ? collapsedStatItems : fullStatItems;
+
+  dom.dashboardPanel.classList.toggle("is-collapsed", state.dashboardCollapsed);
+  dom.dashboardPanel.setAttribute("aria-expanded", String(!state.dashboardCollapsed));
+  dom.dashboardCollapseButton.textContent = state.dashboardCollapsed ? "展開" : "折りたたむ";
+  dom.dashboardCollapseButton.setAttribute("aria-expanded", String(!state.dashboardCollapsed));
+
+  dom.dashboardStats.innerHTML = statItems.map((item) => `
+    <div class="dashboard-stat-card">
+      <span>${escapeHtml(item.label)}</span>
+      <strong>${item.value}</strong>
+    </div>
+  `).join("");
+
+  renderRecentNotes();
+  renderCategoryStats();
+}
+
+function getDashboardStats() {
+  const now = Date.now();
+  const sevenDays = 7 * 24 * 60 * 60 * 1000;
+
+  return {
+    total: state.notes.length,
+    createdToday: state.notes.filter((note) => isSameLocalDay(note.createdAt, new Date())).length,
+    recentlyUpdated: state.notes.filter((note) => now - toTime(note.updatedAt) <= sevenDays).length,
+    pinned: state.notes.filter((note) => note.pinned).length,
+    favorite: state.notes.filter((note) => note.favorite).length
+  };
+}
+
+function renderRecentNotes() {
+  const recentNotes = [...state.notes]
+    .sort((a, b) => toTime(b.updatedAt) - toTime(a.updatedAt))
+    .slice(0, 3);
+
+  if (recentNotes.length === 0) {
+    dom.recentNotesList.innerHTML = `<p class="dashboard-empty">まだメモがありません。</p>`;
+    return;
+  }
+
+  dom.recentNotesList.innerHTML = recentNotes.map((note) => {
+    const title = note.title.trim() || "無題メモ";
+    const colorClass = getNoteColorClass(note.color);
+
+    return `
+      <button class="recent-note-button ${colorClass}" type="button" data-recent-note-id="${escapeHtml(note.id)}">
+        <span class="recent-note-swatch" aria-hidden="true"></span>
+        <span>
+          <span class="recent-note-title">${escapeHtml(title)}</span>
+          <span class="recent-note-meta">${escapeHtml(note.category)}</span>
+        </span>
+        <time class="recent-note-time">${formatDate(note.updatedAt)}</time>
+      </button>
+    `;
+  }).join("");
+}
+
+function renderCategoryStats() {
+  const counts = new Map();
+  state.categories
+    .filter((category) => category !== "全部")
+    .forEach((category) => counts.set(category, 0));
+
+  state.notes.forEach((note) => {
+    const category = normalizeCategory(note.category);
+    counts.set(category, (counts.get(category) || 0) + 1);
+  });
+
+  dom.categoryStatsTotal.textContent = `${state.notes.length}件`;
+  dom.categoryStatsList.innerHTML = [...counts.entries()]
+    .map(([category, count]) => `
+      <span class="category-stat-chip">
+        <span>${escapeHtml(category)}</span>
+        <strong>${count}</strong>
+      </span>
+    `)
+    .join("");
 }
 
 function renderFilterControls() {
@@ -764,6 +920,33 @@ function resetFilters() {
   localStorage.setItem(STORAGE_KEYS.pinnedOnly, String(state.pinnedOnly));
   renderCategoryFilters();
   renderNotes();
+}
+
+function applyDashboardShortcut(type) {
+  state.searchQuery = "";
+  dom.searchInput.value = "";
+  state.activeCategory = "全部";
+  applyColorFilter("all");
+  applyBooleanFilter("favoriteOnly", type === "favorite");
+  applyBooleanFilter("pinnedOnly", type === "pinned");
+  localStorage.setItem(STORAGE_KEYS.colorFilter, state.colorFilter);
+  localStorage.setItem(STORAGE_KEYS.favoriteOnly, String(state.favoriteOnly));
+  localStorage.setItem(STORAGE_KEYS.pinnedOnly, String(state.pinnedOnly));
+  renderCategoryFilters();
+  renderAll();
+}
+
+function handleRecentNoteClick(event) {
+  const button = event.target.closest("[data-recent-note-id]");
+  if (!button) return;
+
+  selectNote(button.dataset.recentNoteId);
+}
+
+function toggleDashboardCollapsed() {
+  state.dashboardCollapsed = !state.dashboardCollapsed;
+  localStorage.setItem(STORAGE_KEYS.dashboardCollapsed, String(state.dashboardCollapsed));
+  renderDashboard();
 }
 
 function handleCategoryPointerDown(event) {
@@ -1008,9 +1191,8 @@ function renderEditor() {
   const hasNote = Boolean(note);
   updateEditorShell();
 
-  if (!state.isEditorOpen) {
-    return;
-  }
+  dom.noteViewPanel.hidden = !(state.isEditorOpen && hasNote && state.editorMode === "view");
+  dom.noteForm.hidden = !(state.isEditorOpen && hasNote && state.editorMode === "edit");
 
   [
     dom.titleInput,
@@ -1045,6 +1227,16 @@ function renderEditor() {
   }
 
   applyNoteColorClass(dom.editorPanel, note.color);
+
+  if (state.editorMode === "view") {
+    renderViewPanel(note);
+  } else {
+    renderEditForm(note);
+  }
+}
+
+function renderEditForm(note) {
+  applyNoteColorClass(dom.editorPanel, note.color);
   dom.editorHeading.textContent = note.title.trim() || "無題メモ";
   dom.saveState.textContent = "Saved";
   dom.titleInput.value = note.title;
@@ -1060,15 +1252,45 @@ function renderEditor() {
   updateCharCount();
 }
 
+function renderViewPanel(note) {
+  const title = note.title.trim() || "無題メモ";
+  const priorityClass = getPriorityClass(note.priority);
+  const tags = note.tags.length
+    ? note.tags.map((tag) => `<span class="tag">#${escapeHtml(tag)}</span>`).join("")
+    : `<span class="tag">タグなし</span>`;
+
+  dom.viewHeading.textContent = title;
+  dom.viewTitle.textContent = title;
+  dom.viewCategory.textContent = note.category;
+  dom.viewStatusRow.innerHTML = [
+    `<span class="view-status-chip ${priorityClass}">重要度 ${escapeHtml(note.priority)}</span>`,
+    note.pinned ? `<span class="view-status-chip">ピン留め</span>` : "",
+    note.favorite ? `<span class="view-status-chip">お気に入り</span>` : ""
+  ].join("");
+  dom.viewTags.innerHTML = tags;
+  dom.viewBody.innerHTML = renderMarkdownPreview(note.body);
+  dom.viewCreatedAtText.textContent = formatDateTime(note.createdAt);
+  dom.viewUpdatedAtText.textContent = formatDateTime(note.updatedAt);
+  dom.viewPinButton.textContent = note.pinned ? "ピン解除" : "ピン留め";
+  dom.viewPinButton.classList.toggle("is-on", note.pinned);
+  dom.viewFavoriteButton.textContent = note.favorite ? "お気に入り解除" : "お気に入り";
+  dom.viewFavoriteButton.classList.toggle("is-on", note.favorite);
+  renderColorPaletteInto(dom.viewColorPalette, note.color, false);
+}
+
 function renderEditorMeta(note) {
   dom.createdAtText.textContent = formatDateTime(note.createdAt);
   dom.updatedAtText.textContent = formatDateTime(note.updatedAt);
 }
 
 function renderColorPalette(selectedColor, disabled) {
+  renderColorPaletteInto(dom.colorPalette, selectedColor, disabled);
+}
+
+function renderColorPaletteInto(container, selectedColor, disabled) {
   const safeColor = normalizeNoteColor(selectedColor);
 
-  dom.colorPalette.innerHTML = NOTE_COLORS.map((color) => {
+  container.innerHTML = NOTE_COLORS.map((color) => {
     const activeClass = color.id === safeColor ? " is-active" : "";
     const disabledAttribute = disabled ? " disabled" : "";
 
@@ -1104,12 +1326,33 @@ function applyNoteColorClass(element, color) {
 function selectInitialNote() {
   const firstVisible = getVisibleNotes()[0];
   state.selectedId = firstVisible ? firstVisible.id : null;
+  state.editorMode = "view";
 }
 
 function selectNote(id) {
   flushAutoSave(false);
   state.selectedId = id;
+  state.editorMode = "view";
   openEditor();
+  renderAll();
+  resetEditorScrollOnSmallScreen();
+}
+
+function switchToEditMode() {
+  const note = getSelectedNote();
+  if (!note) return;
+
+  state.editorMode = "edit";
+  renderAll();
+  resetEditorScrollOnSmallScreen();
+}
+
+function switchToViewMode() {
+  const note = getSelectedNote();
+  if (!note) return;
+
+  flushAutoSave(true);
+  state.editorMode = "view";
   renderAll();
   resetEditorScrollOnSmallScreen();
 }
@@ -1173,6 +1416,7 @@ function createNote(template = NOTE_TEMPLATES[0]) {
 
   state.notes.unshift(note);
   state.selectedId = note.id;
+  state.editorMode = "edit";
   openEditor();
   saveNotes(false);
   renderAll();
@@ -1192,6 +1436,7 @@ function deleteSelectedNote() {
   state.notes = state.notes.filter((item) => item.id !== note.id);
   const next = getVisibleNotes()[0] || state.notes[0] || null;
   state.selectedId = next ? next.id : null;
+  state.editorMode = "view";
   state.isEditorOpen = Boolean(next) || !isSmallScreen();
   state.isDirty = false;
   clearTimeout(state.autoSaveTimer);
@@ -1230,6 +1475,7 @@ function flushAutoSave(showMessage) {
   renderEditorMeta(note);
   dom.saveState.textContent = "Saved";
   renderNotes();
+  renderDashboard();
 }
 
 // フォームの値をメモオブジェクトへ反映します。
@@ -1263,8 +1509,137 @@ function handleCardAction(button) {
 
   note.updatedAt = new Date().toISOString();
   state.selectedId = note.id;
+  state.editorMode = "view";
   saveNotes(false);
   renderAll();
+}
+
+function toggleSelectedFlag(key) {
+  flushAutoSave(false);
+
+  const note = getSelectedNote();
+  if (!note || !["pinned", "favorite"].includes(key)) return;
+
+  note[key] = !note[key];
+  note.updatedAt = new Date().toISOString();
+  saveNotes(false);
+  renderAll();
+}
+
+function handlePreviewChecklistChange(event) {
+  const checkbox = event.target.closest("[data-check-line]");
+  if (!checkbox) return;
+
+  const note = getSelectedNote();
+  if (!note) return;
+
+  const lineIndex = Number.parseInt(checkbox.dataset.checkLine, 10);
+  if (!Number.isInteger(lineIndex)) return;
+
+  const lines = note.body.split(/\r?\n/);
+  const line = lines[lineIndex];
+  if (typeof line !== "string" || !/^\s*-\s+\[( |x|X)\]\s*/.test(line)) return;
+
+  lines[lineIndex] = line.replace(
+    /^(\s*-\s+\[)( |x|X)(\]\s*)/,
+    `$1${checkbox.checked ? "x" : " "}$3`
+  );
+  note.body = lines.join("\n");
+  note.updatedAt = new Date().toISOString();
+  saveNotes(false);
+  renderAll();
+  showToast("チェックリストを更新しました");
+}
+
+function renderMarkdownPreview(body) {
+  const lines = toStringValue(body).split(/\r?\n/);
+
+  if (lines.length === 0 || lines.every((line) => line.trim() === "")) {
+    return `<p class="dashboard-empty">本文なし</p>`;
+  }
+
+  return lines.map((line, index) => renderMarkdownLine(line, index)).join("");
+}
+
+function renderMarkdownLine(line, index) {
+  const trimmed = line.trim();
+
+  if (!trimmed) {
+    return `<div class="markdown-blank-line" aria-hidden="true"></div>`;
+  }
+
+  const checklistMatch = line.match(/^\s*-\s+\[( |x|X)\]\s*(.*)$/);
+  if (checklistMatch) {
+    const checked = checklistMatch[1].toLowerCase() === "x";
+    const checkedAttribute = checked ? " checked" : "";
+    const completeClass = checked ? " is-complete" : "";
+
+    return `
+      <label class="preview-check${completeClass}">
+        <input type="checkbox" data-check-line="${index}"${checkedAttribute}>
+        <span class="preview-check-text">${formatInlineMarkdown(checklistMatch[2])}</span>
+      </label>
+    `;
+  }
+
+  const heading3 = line.match(/^###\s+(.+)$/);
+  if (heading3) {
+    return `<h4>${formatInlineMarkdown(heading3[1])}</h4>`;
+  }
+
+  const heading2 = line.match(/^##\s+(.+)$/);
+  if (heading2) {
+    return `<h3>${formatInlineMarkdown(heading2[1])}</h3>`;
+  }
+
+  const bullet = line.match(/^\s*-\s+(.+)$/);
+  if (bullet) {
+    return `<ul><li>${formatInlineMarkdown(bullet[1])}</li></ul>`;
+  }
+
+  return `<p>${formatInlineMarkdown(line)}</p>`;
+}
+
+function formatInlineMarkdown(text) {
+  return toStringValue(text)
+    .split(/(https:\/\/[^\s<>"']+)/g)
+    .map((part) => {
+      if (part.startsWith("https://")) {
+        return formatSafeLink(part);
+      }
+
+      return formatBoldText(part);
+    })
+    .join("");
+}
+
+function formatBoldText(text) {
+  return escapeHtml(text).replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+}
+
+function formatSafeLink(rawUrl) {
+  const { url, trailing } = splitTrailingUrlPunctuation(rawUrl);
+  const safeHref = escapeHtml(url);
+  const safeText = escapeHtml(shortenUrl(url));
+  const safeTrailing = formatBoldText(trailing);
+
+  return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${safeText}</a>${safeTrailing}`;
+}
+
+function splitTrailingUrlPunctuation(rawUrl) {
+  const match = rawUrl.match(/^(.+?)([.,。、，）)\]]*)$/);
+  if (!match) {
+    return { url: rawUrl, trailing: "" };
+  }
+
+  return {
+    url: match[1],
+    trailing: match[2]
+  };
+}
+
+function shortenUrl(url) {
+  return url.length > 64 ? `${url.slice(0, 42)}...${url.slice(-14)}` : url;
 }
 
 function openEditor() {
@@ -1280,9 +1655,14 @@ function closeEditor() {
 
 function updateEditorShell() {
   const isOpen = state.isEditorOpen;
+  const hasNote = Boolean(getSelectedNote());
+  const hasOpenContent = isOpen && hasNote;
   dom.editorPanel.classList.toggle("is-closed", !isOpen);
-  dom.noteForm.hidden = !isOpen;
-  dom.editorClosedState.hidden = isOpen;
+  dom.editorPanel.classList.toggle("is-view-mode", hasOpenContent && state.editorMode === "view");
+  dom.editorPanel.classList.toggle("is-edit-mode", hasOpenContent && state.editorMode === "edit");
+  dom.noteViewPanel.hidden = !(hasOpenContent && state.editorMode === "view");
+  dom.noteForm.hidden = !(hasOpenContent && state.editorMode === "edit");
+  dom.editorClosedState.hidden = hasOpenContent || (isSmallScreen() && !isOpen);
   dom.body.classList.toggle("editor-open", isOpen && isSmallScreen());
 }
 
@@ -1448,6 +1828,7 @@ function importNotes(event) {
         state.activeCategory = "全部";
       }
       state.selectedId = getVisibleNotes()[0]?.id || state.notes[0]?.id || null;
+      state.editorMode = "view";
       saveCategories();
       saveNotes(false);
       renderCategoryFilters();
@@ -1525,6 +1906,7 @@ function renderSettings() {
   dom.settingsNoteCount.textContent = `${state.notes.length}件`;
   dom.settingsLastBackup.textContent = lastExportAt ? formatDateTime(lastExportAt) : "未バックアップ";
   dom.backupAdvice.hidden = !shouldRecommendBackup(lastExportAt);
+  dom.showDashboardToggle.checked = state.showDashboard;
 }
 
 function getLastExportAt() {
@@ -1683,6 +2065,24 @@ function loadBooleanFilter(storageKey) {
   return localStorage.getItem(storageKey) === "true";
 }
 
+function applyShowDashboard(value) {
+  state.showDashboard = Boolean(value);
+}
+
+function loadShowDashboard() {
+  const stored = localStorage.getItem(STORAGE_KEYS.showDashboard);
+  return stored === null ? true : stored === "true";
+}
+
+function applyDashboardCollapsed(value) {
+  state.dashboardCollapsed = Boolean(value);
+}
+
+function loadDashboardCollapsed() {
+  const stored = localStorage.getItem(STORAGE_KEYS.dashboardCollapsed);
+  return stored === null ? true : stored === "true";
+}
+
 function hasActiveFilters() {
   return Boolean(state.searchQuery)
     || state.activeCategory !== "全部"
@@ -1732,6 +2132,7 @@ function resetEditorScrollOnSmallScreen() {
 
 function scrollEditorFormToTop() {
   dom.editorPanel.scrollTop = 0;
+  dom.noteViewPanel.scrollTop = 0;
   dom.noteForm.scrollTop = 0;
 }
 
@@ -1769,6 +2170,15 @@ function isValidDate(value) {
 function toTime(value) {
   const time = Date.parse(value);
   return Number.isNaN(time) ? 0 : time;
+}
+
+function isSameLocalDay(value, targetDate) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+
+  return date.getFullYear() === targetDate.getFullYear()
+    && date.getMonth() === targetDate.getMonth()
+    && date.getDate() === targetDate.getDate();
 }
 
 function formatDate(value) {
@@ -1830,10 +2240,49 @@ function registerServiceWorker() {
   navigator.serviceWorker.register("./service-worker.js")
     .then((registration) => {
       watchServiceWorkerUpdate(registration);
-      registration.update();
+      checkForServiceWorkerUpdate(registration);
     })
     .catch((error) => {
       console.warn("TOI MEMO: Service Worker registration failed.", error);
+    });
+
+  navigator.serviceWorker.ready
+    .then((registration) => {
+      checkForServiceWorkerUpdate(registration);
+    })
+    .catch((error) => {
+      console.warn("TOI MEMO: Service Worker ready check failed.", error);
+    });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+
+    navigator.serviceWorker.ready
+      .then((registration) => {
+        checkForServiceWorkerUpdate(registration);
+      })
+      .catch((error) => {
+        console.warn("TOI MEMO: Service Worker visibility update check failed.", error);
+      });
+  });
+}
+
+function checkForServiceWorkerUpdate(registration) {
+  if (!registration) return Promise.resolve();
+
+  if (registration.waiting && navigator.serviceWorker.controller) {
+    showUpdateNotice(registration.waiting);
+    return Promise.resolve();
+  }
+
+  return registration.update()
+    .then(() => {
+      if (registration.waiting && navigator.serviceWorker.controller) {
+        showUpdateNotice(registration.waiting);
+      }
+    })
+    .catch((error) => {
+      console.warn("TOI MEMO: Service Worker update check failed.", error);
     });
 }
 
@@ -1848,13 +2297,15 @@ function watchServiceWorkerUpdate(registration) {
 
     worker.addEventListener("statechange", () => {
       if (worker.state === "installed" && navigator.serviceWorker.controller) {
-        showUpdateNotice(worker);
+        showUpdateNotice(registration.waiting || worker);
       }
     });
   });
 }
 
 function showUpdateNotice(worker) {
+  if (!worker) return;
+
   state.waitingWorker = worker;
   dom.updateBanner.hidden = false;
 }
