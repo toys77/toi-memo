@@ -1,6 +1,6 @@
 "use strict";
 
-const APP_VERSION = "2.0.1";
+const APP_VERSION = "2.0.3";
 const BACKUP_RECOMMEND_DAYS = 7;
 
 const STORAGE_KEYS = {
@@ -27,13 +27,13 @@ const VIEW_MODES = ["card", "list", "compact"];
 const LONG_PRESS_MS = 460;
 
 const NOTE_COLORS = [
-  { id: "default", label: "デフォルト", swatch: "#2a2a2f" },
-  { id: "blue-gray", label: "ブルーグレー", swatch: "#26313a" },
-  { id: "dark-green", label: "ダークグリーン", swatch: "#1f342d" },
-  { id: "deep-blue", label: "ディープブルー", swatch: "#202d48" },
-  { id: "bordeaux", label: "ボルドー", swatch: "#41252e" },
-  { id: "brown", label: "ブラウン", swatch: "#3a2d24" },
-  { id: "purple-gray", label: "パープルグレー", swatch: "#332c40" }
+  { id: "default", label: "デフォルト", swatch: "var(--swatch-default)" },
+  { id: "blue-gray", label: "ブルーグレー", swatch: "var(--swatch-blue-gray)" },
+  { id: "dark-green", label: "ダークグリーン", swatch: "var(--swatch-dark-green)" },
+  { id: "deep-blue", label: "ディープブルー", swatch: "var(--swatch-deep-blue)" },
+  { id: "bordeaux", label: "ボルドー", swatch: "var(--swatch-bordeaux)" },
+  { id: "brown", label: "ブラウン", swatch: "var(--swatch-brown)" },
+  { id: "purple-gray", label: "パープルグレー", swatch: "var(--swatch-purple-gray)" }
 ];
 
 // 新規作成時のテンプレートです。ここに追加すると選択画面にも反映されます。

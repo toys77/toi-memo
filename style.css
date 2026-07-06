@@ -45,6 +45,34 @@
   --shadow-sm: var(--shadow-soft);
   --shadow: var(--shadow-card);
   --shadow-lg: var(--shadow-strong);
+  --note-default-bg-start: color-mix(in srgb, var(--surface-2) 92%, var(--surface));
+  --note-default-bg-end: color-mix(in srgb, var(--surface) 92%, var(--bg));
+  --note-default-border: color-mix(in srgb, var(--border) 86%, transparent);
+  --note-blue-gray-bg-start: #26313a;
+  --note-blue-gray-bg-end: #1c252c;
+  --note-blue-gray-border: #405160;
+  --note-dark-green-bg-start: #20352f;
+  --note-dark-green-bg-end: #182821;
+  --note-dark-green-border: #3f5b50;
+  --note-deep-blue-bg-start: #202d48;
+  --note-deep-blue-bg-end: #182239;
+  --note-deep-blue-border: #3f5176;
+  --note-bordeaux-bg-start: #422630;
+  --note-bordeaux-bg-end: #321d25;
+  --note-bordeaux-border: #704052;
+  --note-brown-bg-start: #3b2e24;
+  --note-brown-bg-end: #2d231c;
+  --note-brown-border: #604c3d;
+  --note-purple-gray-bg-start: #342d41;
+  --note-purple-gray-bg-end: #282232;
+  --note-purple-gray-border: #574d68;
+  --swatch-default: #2a2a2f;
+  --swatch-blue-gray: #26313a;
+  --swatch-dark-green: #1f342d;
+  --swatch-deep-blue: #202d48;
+  --swatch-bordeaux: #41252e;
+  --swatch-brown: #3a2d24;
+  --swatch-purple-gray: #332c40;
   --duration-fast: 120ms;
   --duration-normal: 220ms;
   --duration-slow: 420ms;
@@ -74,6 +102,34 @@ body[data-theme="light"] {
   --shadow-sm: var(--shadow-soft);
   --shadow: var(--shadow-card);
   --shadow-lg: var(--shadow-strong);
+  --note-default-bg-start: #f7f7f9;
+  --note-default-bg-end: #ffffff;
+  --note-default-border: #d7d7df;
+  --note-blue-gray-bg-start: #dce7ee;
+  --note-blue-gray-bg-end: #f4f8fb;
+  --note-blue-gray-border: #9eb3c3;
+  --note-dark-green-bg-start: #dcebe4;
+  --note-dark-green-bg-end: #f3faf6;
+  --note-dark-green-border: #94b8a7;
+  --note-deep-blue-bg-start: #dfe7f6;
+  --note-deep-blue-bg-end: #f4f7fd;
+  --note-deep-blue-border: #9aadd2;
+  --note-bordeaux-bg-start: #f1dfe5;
+  --note-bordeaux-bg-end: #fbf5f7;
+  --note-bordeaux-border: #c99aaa;
+  --note-brown-bg-start: #eadfd4;
+  --note-brown-bg-end: #fbf7f1;
+  --note-brown-border: #bea48b;
+  --note-purple-gray-bg-start: #e7e0ef;
+  --note-purple-gray-bg-end: #f7f4fb;
+  --note-purple-gray-border: #aa9ac3;
+  --swatch-default: #f0f1f4;
+  --swatch-blue-gray: #aebfce;
+  --swatch-dark-green: #9ebfac;
+  --swatch-deep-blue: #9fb4dc;
+  --swatch-bordeaux: #d0a0b0;
+  --swatch-brown: #c5a88e;
+  --swatch-purple-gray: #b2a2cc;
 }
 
 * {
@@ -126,7 +182,7 @@ textarea:disabled {
 }
 
 .app-shell {
-  width: min(100%, 1500px);
+  width: min(100%, 1580px);
   min-height: 100vh;
   margin: 0 auto;
   padding: var(--space-6);
@@ -137,7 +193,7 @@ textarea:disabled {
   top: 14px;
   z-index: 12;
   display: grid;
-  grid-template-columns: minmax(190px, 260px) minmax(280px, 1fr) auto;
+  grid-template-columns: minmax(180px, 250px) minmax(300px, 1fr) minmax(260px, auto);
   gap: var(--space-4);
   align-items: center;
   border: 1px solid var(--border);
@@ -155,6 +211,7 @@ textarea:disabled {
   font-family: var(--font-ui);
   font-size: var(--font-xs);
   font-weight: 700;
+  line-height: 1.25;
   letter-spacing: 0;
   text-transform: uppercase;
 }
@@ -168,13 +225,15 @@ p {
 h1 {
   margin-bottom: 0;
   font-family: var(--font-ui);
-  font-size: clamp(1.9rem, 4vw, 3.9rem);
-  line-height: 0.95;
+  font-size: clamp(1.8rem, 3.2vw, 3.6rem);
+  line-height: 1;
   letter-spacing: 0;
+  overflow-wrap: anywhere;
 }
 
 .brand h1 {
   font-weight: 800;
+  max-width: 100%;
 }
 
 .wf-active .brand h1 {
@@ -194,6 +253,7 @@ h2 {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
+  min-width: 0;
 }
 
 .global-search {
@@ -669,7 +729,7 @@ h2 {
 
 .workspace {
   display: grid;
-  grid-template-columns: 240px minmax(390px, 1fr) minmax(360px, 440px);
+  grid-template-columns: minmax(220px, 250px) minmax(360px, 1fr) minmax(410px, 500px);
   gap: var(--space-5);
   align-items: start;
   padding-top: var(--space-5);
@@ -685,6 +745,7 @@ h2 {
   position: sticky;
   top: 132px;
   display: flex;
+  max-height: calc(100vh - 154px);
   flex-direction: column;
   gap: var(--space-4);
   border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
@@ -693,6 +754,8 @@ h2 {
   background: color-mix(in srgb, var(--surface-glass) 90%, transparent);
   box-shadow: var(--shadow-soft);
   backdrop-filter: blur(14px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .notes-panel,
@@ -713,9 +776,9 @@ h2 {
 .editor-panel {
   position: sticky;
   top: 132px;
-  --note-bg-start: color-mix(in srgb, var(--surface-elevated) 92%, var(--surface-2));
-  --note-bg-end: var(--surface-elevated);
-  --note-border: var(--border);
+  --note-bg-start: var(--note-default-bg-start);
+  --note-bg-end: var(--note-default-bg-end);
+  --note-border: var(--note-default-border);
   border-color: var(--note-border);
   box-shadow: var(--shadow);
   overflow: hidden;
@@ -735,14 +798,39 @@ h2 {
   gap: var(--space-4);
   align-items: flex-start;
   margin-bottom: var(--space-4);
+  min-width: 0;
 }
 
 .editor-heading {
-  align-items: center;
+  align-items: flex-start;
+  margin-bottom: 0;
 }
 
 .editor-sheet-header {
   background: var(--surface);
+  min-width: 0;
+}
+
+.note-view-panel > .editor-sheet-header {
+  padding: var(--space-5) var(--space-5) 0;
+}
+
+.panel-heading > div,
+.brand {
+  min-width: 0;
+  max-width: 100%;
+}
+
+#editorHeading,
+#viewHeading {
+  display: -webkit-box;
+  max-width: 100%;
+  line-height: 1.28;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .editor-drag-handle {
@@ -752,8 +840,12 @@ h2 {
 .editor-tools {
   display: flex;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
   gap: 8px;
+  max-width: 52%;
+  min-width: 0;
 }
 
 .editor-close-button {
@@ -933,7 +1025,7 @@ h2 {
 .color-filter-chip::before {
   width: 22px;
   height: 22px;
-  border: 1px solid color-mix(in srgb, #ffffff 18%, transparent);
+  border: 1px solid color-mix(in srgb, #ffffff 22%, transparent);
   border-radius: var(--radius-pill);
   background: var(--swatch-color);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
@@ -961,7 +1053,7 @@ h2 {
   transform: translateY(-1px);
   color: var(--text);
   border-color: var(--accent);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 7%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 9%, transparent);
 }
 
 .category-add-button,
@@ -1012,6 +1104,9 @@ h2 {
   background: transparent;
   text-align: left;
   font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   transition: transform var(--transition), border-color var(--transition), background var(--transition), color var(--transition), box-shadow var(--transition);
 }
 
@@ -1213,8 +1308,9 @@ h2 {
 }
 
 .recent-note-button {
-  --note-bg-start: color-mix(in srgb, var(--surface-2) 92%, var(--surface));
-  --note-border: color-mix(in srgb, var(--border) 86%, transparent);
+  --note-bg-start: var(--note-default-bg-start);
+  --note-bg-end: var(--note-default-bg-end);
+  --note-border: var(--note-default-border);
   display: grid;
   grid-template-columns: 10px minmax(0, 1fr) auto;
   gap: var(--space-3);
@@ -1372,9 +1468,9 @@ h2 {
 }
 
 .note-card {
-  --note-bg-start: color-mix(in srgb, var(--surface-2) 92%, var(--surface));
-  --note-bg-end: color-mix(in srgb, var(--surface) 92%, var(--bg));
-  --note-border: color-mix(in srgb, var(--border) 86%, transparent);
+  --note-bg-start: var(--note-default-bg-start);
+  --note-bg-end: var(--note-default-bg-end);
+  --note-border: var(--note-default-border);
   display: flex;
   min-height: 210px;
   flex-direction: column;
@@ -1461,39 +1557,39 @@ h2 {
 }
 
 .color-blue-gray {
-  --note-bg-start: #26313a;
-  --note-bg-end: #1c252c;
-  --note-border: #405160;
+  --note-bg-start: var(--note-blue-gray-bg-start);
+  --note-bg-end: var(--note-blue-gray-bg-end);
+  --note-border: var(--note-blue-gray-border);
 }
 
 .color-dark-green {
-  --note-bg-start: #20352f;
-  --note-bg-end: #182821;
-  --note-border: #3f5b50;
+  --note-bg-start: var(--note-dark-green-bg-start);
+  --note-bg-end: var(--note-dark-green-bg-end);
+  --note-border: var(--note-dark-green-border);
 }
 
 .color-deep-blue {
-  --note-bg-start: #202d48;
-  --note-bg-end: #182239;
-  --note-border: #3f5176;
+  --note-bg-start: var(--note-deep-blue-bg-start);
+  --note-bg-end: var(--note-deep-blue-bg-end);
+  --note-border: var(--note-deep-blue-border);
 }
 
 .color-bordeaux {
-  --note-bg-start: #422630;
-  --note-bg-end: #321d25;
-  --note-border: #704052;
+  --note-bg-start: var(--note-bordeaux-bg-start);
+  --note-bg-end: var(--note-bordeaux-bg-end);
+  --note-border: var(--note-bordeaux-border);
 }
 
 .color-brown {
-  --note-bg-start: #3b2e24;
-  --note-bg-end: #2d231c;
-  --note-border: #604c3d;
+  --note-bg-start: var(--note-brown-bg-start);
+  --note-bg-end: var(--note-brown-bg-end);
+  --note-border: var(--note-brown-border);
 }
 
 .color-purple-gray {
-  --note-bg-start: #342d41;
-  --note-bg-end: #282232;
-  --note-border: #574d68;
+  --note-bg-start: var(--note-purple-gray-bg-start);
+  --note-bg-end: var(--note-purple-gray-bg-end);
+  --note-border: var(--note-purple-gray-border);
 }
 
 .card-top,
@@ -1530,6 +1626,7 @@ h2 {
   font-size: var(--font-xs);
   font-weight: 700;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .badge.priority-high {
@@ -1564,11 +1661,13 @@ h2 {
 }
 
 .note-title {
+  min-width: 0;
   margin: 0;
   font-family: var(--font-ui);
   font-size: 1.04rem;
   line-height: 1.35;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .note-preview {
@@ -1587,6 +1686,7 @@ h2 {
 
 .tag-row {
   display: flex;
+  min-width: 0;
   flex-wrap: wrap;
   gap: 6px;
 }
@@ -1656,10 +1756,17 @@ h2 {
   justify-content: space-between;
   gap: var(--space-4);
   align-items: flex-start;
+  min-width: 0;
+}
+
+.view-title-row > div {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .view-category {
   display: inline-flex;
+  max-width: 100%;
   min-height: 26px;
   align-items: center;
   border: 1px solid var(--border);
@@ -1670,14 +1777,19 @@ h2 {
   background: color-mix(in srgb, var(--surface) 78%, transparent);
   font-size: var(--font-xs);
   font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .view-title-row h3 {
+  min-width: 0;
   margin: 0;
   font-family: var(--font-ui);
   font-size: 1.38rem;
   line-height: 1.35;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .view-status-row,
@@ -1916,7 +2028,7 @@ h2 {
 .color-chip span {
   width: 26px;
   height: 26px;
-  border: 1px solid color-mix(in srgb, #ffffff 18%, transparent);
+  border: 1px solid color-mix(in srgb, #ffffff 22%, transparent);
   border-radius: var(--radius-pill);
   background: var(--swatch-color);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
@@ -1926,7 +2038,24 @@ h2 {
 .color-chip.is-active {
   transform: translateY(-1px);
   border-color: var(--accent);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 8%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+body[data-theme="light"] .color-filter-chip::before,
+body[data-theme="light"] .color-chip span {
+  border-color: rgba(17, 17, 17, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+body[data-theme="light"] .color-filter-chip,
+body[data-theme="light"] .color-chip {
+  background: color-mix(in srgb, var(--surface) 92%, var(--surface-2));
+}
+
+body[data-theme="light"] .color-filter-chip.is-active,
+body[data-theme="light"] .color-chip.is-active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.12), var(--shadow-soft);
 }
 
 .toggle-row {
@@ -2074,7 +2203,7 @@ h2 {
   }
 
   .workspace {
-    grid-template-columns: 220px minmax(320px, 1fr);
+    grid-template-columns: minmax(210px, 230px) minmax(320px, 1fr);
   }
 
   .editor-panel {
@@ -2322,6 +2451,11 @@ h2 {
     touch-action: none;
   }
 
+  .note-view-panel > .editor-sheet-header {
+    margin: 0 0 var(--space-4);
+    padding: 8px 0 0;
+  }
+
   .editor-drag-handle {
     display: block;
     width: 52px;
@@ -2345,6 +2479,11 @@ h2 {
     overflow-wrap: anywhere;
   }
 
+  #editorHeading,
+  #viewHeading {
+    -webkit-line-clamp: 2;
+  }
+
   .editor-close-button {
     width: 48px;
     min-width: 48px;
@@ -2357,6 +2496,7 @@ h2 {
 
   .editor-tools {
     gap: 6px;
+    max-width: none;
   }
 
   .keyboard-dismiss-button {
